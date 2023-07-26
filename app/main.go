@@ -34,11 +34,20 @@ func GetLanguageParser() *participle.Parser[Program] {
 
 // X86 Language
 type X86Program struct {
-    X86Instrs []*X86Instrs ` "globl" "main" EOL "main:" EOL @@*`
+	X86Directives []*X86Directive `@@*`
+    X86Instrs []*X86Instr         `@@*`
 }
 
-type X86Instrs struct {
-    Addq []*X86Arg `"addq" @@ "," @@`
+type X86Directive struct {
+	Name *string `"."@Ident`
+	Arg *string `@Ident`
+}
+
+type X86Instr struct {
+	Label *string  `@Ident":"`
+    Addq []*X86Arg `| "addq" @@ "," @@`
+	Movq []*X86Arg `| "movq" @@ "," @@`
+	Retq string    `| @"retq"`
 }
 
 type X86Arg struct {
