@@ -18,11 +18,11 @@ type Expr struct {
 }
 
 type LetExpr struct {
-	LetAssignments []*LetAssignment `"(" "let" "(" @@ @@* ")"`
+	LetAssignments []*Assignment `"(" "let" "(" @@ @@* ")"`
 	LetBody *Expr                   `@@ ")"`
 }
 
-type LetAssignment struct {
+type Assignment struct {
 	Ref *Var   `"(" @@`
 	Expr *Expr `@@ ")"`
 }

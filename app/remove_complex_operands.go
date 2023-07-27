@@ -32,21 +32,41 @@ func RemoveComplexOperandsFromExpr(expr *Expr, GetNewVar *func() int) (*Expr, er
     case expr.Let != nil:
         return nil, nil
     case expr.App != nil:
-        // (+ (+ 1 2) (+ 2 3)) ->
-        // (let ((tmp1 (+ 1 2)))
-        //   (+ tmp1 (+ 2 3))) ->
-        // (let ((tmp1 (+ 1 2)))
-        //   (let ((tmp2 (+ 2 3))
-        //     (+ tmp1 tmp2))))
-        for _, e := range(expr.App) {
-            
-        }
+        // Need to be able to pass an expression with a hole to fill
+        // (+ 2 3) here needs to be the outermost expression
+        // let X mark a hole
+        // (+ (+ 1 X) (+ 4 5))
+        // (+ (+ 1 (+ 2 3)) (+ 4 5)) ->
+        // (let ((tmp1 (+ 2 3)))
+        //   (+ (+ 1 tmp1) (+ 2 3))) ->
+        // (let ((tmp1 (+ 2 3)))
+        //   (let ((tmp2 (+ 1 tmp1)))
+        //     (+ tmp2 (+ 2 3)))) ->
+        // (let ((tmp1 (+ 2 3)))
+        //   (let ((tmp2 (+ 1 tmp1)))
+        //     (let ((tmp3 (+ 2 3)))
+        //       (+ tmp2 tmp3))))
 
 
         return nil, nil
     default:
         return nil, errors.New("Unrecognized expression type")
     }
+}
+
+func RemoveComplexHelper(expr *Expr) (*LetExpr, error) {
+    if !IsOperandComplex(expr) {
+        return nil, errors.New("Expression is already simplified")
+    }
+
+    switch {
+        case expr.App != nil:
+
+    }
+
+    // (+ (+ 1 2) 3)
+
+    return nil, nil
 }
 
 func IsOperandComplex(expr *Expr) bool {
