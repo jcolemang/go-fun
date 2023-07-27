@@ -17,7 +17,18 @@ type Program struct {
 type Expr struct {
 	NumVal *Num      `@@`
     VarExpr *Var     `| @@`
+	LetExpr *LetExpr `| @@`
     AppExpr []*Expr  `| "(" @@ @@* ")" `
+}
+
+type LetExpr struct {
+	LetAssignments []*LetAssignment `"(" "let" "(" @@ @@* ")"`
+	LetBody *Expr                   `@@ ")"`
+}
+
+type LetAssignment struct {
+	Ref *Var  `"(" @@`
+	Val *Expr `@@ ")"`
 }
 
 type Num struct {
@@ -51,7 +62,7 @@ type X86Program struct {
 
 type X86Directive struct {
 	Name *string `( "."@Ident`
-	Arg *string `   @Ident ) EOL`
+	Arg *string  `  @Ident ) EOL`
 }
 
 type X86Instr struct {
