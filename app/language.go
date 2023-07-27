@@ -11,10 +11,10 @@ type Program struct {
 }
 
 type Expr struct {
-	NumVal *Num      `@@`
-    VarExpr *Var     `| @@`
-	LetExpr *LetExpr `| @@`
-    AppExpr []*Expr  `| "(" @@ @@* ")" `
+	Num *Num     `@@`
+    Var *Var     `| @@`
+	Let *LetExpr `| @@`
+    App []*Expr  `| "(" @@ @@* ")" `
 }
 
 type LetExpr struct {
@@ -23,8 +23,8 @@ type LetExpr struct {
 }
 
 type LetAssignment struct {
-	Ref *Var  `"(" @@`
-	Val *Expr `@@ ")"`
+	Ref *Var   `"(" @@`
+	Expr *Expr `@@ ")"`
 }
 
 type Num struct {
@@ -32,7 +32,8 @@ type Num struct {
 }
 
 type Var struct {
-    Value *string `@Ident`
+    Name *string `@Ident`
+    Temp *int
 }
 
 func GetLanguageParser() *participle.Parser[Program] {
