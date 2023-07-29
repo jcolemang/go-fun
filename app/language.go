@@ -28,12 +28,34 @@ type Assignment struct {
 }
 
 type Num struct {
-	Value *float64 `@Int`
+	Value int `@Int`
 }
 
 type Var struct {
-    Name *string `@Ident`
-    Temp *int
+    Name string `@Ident`
+    Temp int
+}
+
+func PrintProgram(p *Program) string {	
+	return PrintExpr(p.Expr)
+}
+
+func PrintExpr(e *Expr) string {
+	switch {
+	case e.Num != nil:
+		return string(e.Num.Value)
+	case e.Var != nil:
+		if e.Var.Name != "" {
+			return e.Var.Name
+		} else {
+			return "tmp" + string(e.Var.Temp)
+		}
+	case e.Let != nil:
+
+	default:
+		return ""
+	}
+	return ""
 }
 
 func GetLanguageParser() *participle.Parser[Program] {

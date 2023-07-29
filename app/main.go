@@ -22,5 +22,9 @@ func main() {
 		r.Close()
 		repr.Println(ast)
 		ctx.FatalIfErrorf(err)
+
+		newProg, err := RemoveComplexOperands(ast)
+		repr.Println(newProg)
+		ctx.FatalIfErrorf(err)
 	}
 }
