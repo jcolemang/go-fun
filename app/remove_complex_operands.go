@@ -13,7 +13,7 @@ import (
 // in other other words, generating three address code
 func RemoveComplexOperands(prog *Program) (*Program, error) {
 	fmt.Println("Removing complex operands")
-    GetNewVar := GetRandomGenerator()
+    GetNewVar := GetVarGenerator()
 
     newExpr, assignments, err := RemoveComplexOperandsFromExpr(prog.Expr, GetNewVar)
     if err != nil {
@@ -34,7 +34,7 @@ func RemoveComplexOperands(prog *Program) (*Program, error) {
 // pair consisting of the new expression and a list of pairs, associating new temporary
 // variables with their initializing expressions.
 // part of why this is annoying is uniquify should come first
-func RemoveComplexOperandsFromExpr(expr *Expr, GetNewVar func() int) (*Expr, []*Assignment, error) {
+func RemoveComplexOperandsFromExpr(expr *Expr, GetNewVar func() *Var) (*Expr, []*Assignment, error) {
     switch {
     case expr.Num != nil:
         return expr, []*Assignment{}, nil
@@ -69,10 +69,10 @@ func RemoveComplexOperandsFromExpr(expr *Expr, GetNewVar func() int) (*Expr, []*
 					return nil, nil, err
 				}
 
-				newVar := Var{Temp: GetNewVar()}
-				newAssignment := Assignment{Ref: &newVar, Expr: e}
+				newVar := GetNewVar()
+				newAssignment := Assignment{Ref: newVar, Expr: e}
 
-				subExprs = append(subExprs, &Expr{Var: &newVar})
+				subExprs = append(subExprs, &Expr{Var: newVar})
 				assignments = append(append(assignments, assgns...), &newAssignment)
 			}
 		}
@@ -117,11 +117,4 @@ func IsOperandPrimitive(expr *Expr) bool {
     }
 }
 
-func GetRandomGenerator() func() int {
-    current := 0
-    generator := func() int {
-        current++
-        return current
-    }
-    return generator
-}
+

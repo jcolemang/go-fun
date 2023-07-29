@@ -23,7 +23,7 @@ func main() {
 		repr.Println(ast)
 		ctx.FatalIfErrorf(err)
 
-		newProg, err := RemoveComplexOperands(ast)
+		newProg, err := Compile(ast)
 		repr.Println(newProg)
 		ctx.FatalIfErrorf(err)
 	}

@@ -33,29 +33,24 @@ type Num struct {
 
 type Var struct {
     Name string `@Ident`
-    Temp int
+    Generated int
 }
 
-func PrintProgram(p *Program) string {	
-	return PrintExpr(p.Expr)
-}
-
-func PrintExpr(e *Expr) string {
-	switch {
-	case e.Num != nil:
-		return string(e.Num.Value)
-	case e.Var != nil:
-		if e.Var.Name != "" {
-			return e.Var.Name
-		} else {
-			return "tmp" + string(e.Var.Temp)
-		}
-	case e.Let != nil:
-
-	default:
-		return ""
+func GetBuiltIns() []*Var {
+	return []*Var{
+		&Var{Name: "+"},
 	}
-	return ""
+}
+
+func GetVarGenerator() func() *Var {
+    current := 0
+    generator := func() *Var {
+        current++
+        return &Var{
+			Generated: current,
+		}
+    }
+    return generator
 }
 
 func GetLanguageParser() *participle.Parser[Program] {

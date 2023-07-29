@@ -11,4 +11,12 @@ package main
 // x_1 := 2
 // x_2 := 3
 // (+ 1 (+ x_1 x_2))
-// step 3: Next comes removing the complex expressions as specified in the textbook
+// step 3: Next comes removing the complex expressions as specified in the textbook, and continuing on from there.
+
+func Compile(prog *Program) (*Program, error) {
+	newProg, err := Uniquify(prog)
+	if err != nil {
+		return nil, err
+	}
+	return newProg, nil
+}
