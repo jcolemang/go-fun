@@ -11,7 +11,12 @@ type FlatProgram struct {
 type FlatExpr struct {
 	Num *Num
     Var *Var
-	Assignment *Assignment
+	Assignment *FlatAssignment
     App []*FlatExpr
+}
+
+type FlatAssignment struct {
+	Ref *Var
+	Expr *FlatExpr
 }
 

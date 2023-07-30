@@ -21,15 +21,36 @@ func Flatten(progOrig *Program) (*FlatProgram, error) {
 	}, nil
 }
 
-func FlattenExpr(expr *Expr) (*FlatExpr, []*Assignment, error) {
-	var assignments []*Assignment
+func FlattenExpr(expr *Expr) (*FlatExpr, []*FlatAssignment, error) {
+	var assignments []*FlatAssignment
 	switch {
 	case expr.Num != nil:
 		return &FlatExpr{Num: expr.Num}, assignments, nil
 	case expr.Var != nil:
 		return &FlatExpr{Var: expr.Var}, assignments, nil
 	case expr.Let != nil:
-		return nil, nil, errors.New("I'll come back to this")
+		// (let ((x (let ((y 1)) y)) x)
+		// y = 1
+		// x = y
+		// x
+		var letAssignAssigns []*FlatAssignment
+		for _, a := range(expr.Let.LetAssignments) {
+			flattenedExpr, subAssigns, err := FlattenExpr(a.Expr)
+			if err != nil {
+				return nil, nil, err
+			}
+			letAssignAssigns = append(letAssignAssigns, &FlatAssignment{Ref: a.Ref, Expr: flattenedExpr})
+			assignments = append(assignments, subAssigns...)
+		}
+
+		assignments = append(assignments, letAssignAssigns...)
+		flatBodyExpr, bodyAssigns, err := FlattenExpr(expr.Let.LetBody)
+		if err != nil {
+			return nil, nil, err
+		}
+		assignments = append(assignments, bodyAssigns...)
+
+		return flatBodyExpr, assignments, nil
 	case expr.App != nil:
 		var newExprs []*FlatExpr
 		for _, e := range(expr.App) {
