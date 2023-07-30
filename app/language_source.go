@@ -29,12 +29,13 @@ type Assignment struct {
 	Expr *Expr `@@ ")"`
 }
 
+// have this separated to also handle floats
 type Num struct {
 	Value int `@Int`
 }
 
 type Var struct {
-	Primitive string `@"+"`
+	Primitive string `@("+" | "print")`
     Name string      `| @Ident`
     Generated int
 }

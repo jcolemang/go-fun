@@ -22,12 +22,16 @@ import (
 // Other possible passes:
 // expanding primitive mathematical expressions (+ 1 2 3) -> (+ 1 (+ 2 3)) to make arbitrary numbers of arguments possible
 
-func Compile(prog *Program) (*FlatProgram, error) {	
+func Compile(prog *Program) (*VarAssemblyProgram, error) {	
 	fmt.Println("Initial program")
 	repr.Println(prog)
 
 	getVar := GetVarGenerator()
 
+	// turning 
+	// (+ 1 (let ((x 2)) (let ((x 3)) x)))
+	// into 
+	// (+ 1 (let ((x_1 2)) (let ((x_2 3)) x)))
 	newProg, err := Uniquify(prog, getVar)
 	if err != nil {
 		return nil, err
@@ -36,6 +40,12 @@ func Compile(prog *Program) (*FlatProgram, error) {
 	fmt.Println("Program after Uniquify")
 	repr.Println(newProg)
 
+	// turning
+	// (+ 1 (let ((x_1 2)) (+ x_1 3)))
+	// into 
+	// x_1 = 2
+	// tmp2 = (+ x_1 3)
+	// (+ 1 tmp2)
 	flatProg, err := Flatten(newProg)
 	if err != nil {
 		return nil, err
@@ -44,6 +54,12 @@ func Compile(prog *Program) (*FlatProgram, error) {
 	fmt.Println("Program after Flatten")
 	fmt.Println(FlatProgramToString(flatProg))
 
+	// turning
+	// (+ 1 (+ 2 (+ 3 4)))
+	// into
+	// tmp1 = (+ 3 4)
+	// tmp2 = (+ 2 tmp1)
+	// (+ 1 tmp2)
 	simpleProg, err := RemoveComplexOperands(flatProg, getVar)
 	if err != nil {
 		return nil, err
@@ -52,5 +68,13 @@ func Compile(prog *Program) (*FlatProgram, error) {
 	fmt.Println("Program after RemoveComplexOperands")
 	fmt.Println(FlatProgramToString(simpleProg))
 
-	return simpleProg, nil
+	varAssemblyProg, err := SelectInstructions(simpleProg)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Program after SelectInstructions")
+	repr.Println(varAssemblyProg)
+
+	return varAssemblyProg, nil
 }

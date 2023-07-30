@@ -4,12 +4,6 @@ import (
     "errors"
 )
 
-// Need to turn
-// (let ((a 5) (b 10)) (+ a (+ b 5)))
-// into
-// (let ((a 5) (b 10)) (let ((temp0 (+ b 5)) (+ a temp0))))
-// in other words, this is making explicit the order of operations.
-// in other other words, generating three address code
 func RemoveComplexOperands(prog *FlatProgram, getVar func() *Var) (*FlatProgram, error) {
 	var newStatements []*FlatStatement
 	for _, s := range(prog.Statements) {
@@ -28,22 +22,6 @@ func RemoveComplexOperands(prog *FlatProgram, getVar func() *Var) (*FlatProgram,
     }, nil
 }
 
-// Program after Flatten
-// tmp2 = 3
-// tmp1 = tmp2
-// ( + 1 2 ( + tmp1 4  )  )
-
-// Program after RemoveComplexOperands
-// 3
-// tmp2
-// tmp3 = ( + tmp1 4  )
-// ( + 1 2 tmp3  )
-
-// PS C:\Users\James\Documents\Code\language> cat .\test-files\prog1
-// (+ 1
-//    2
-//    (let ((x (let ((y 3)) y)))
-//      (+ x 4)))
 func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() *Var) ([]*FlatStatement, []*FlatAssignment, error) {
 	var newStatements []*FlatStatement
 	switch {
@@ -76,7 +54,6 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 // bool is necessary because we need to be able to distinguish between the (+ 1 2) in
 // x = 1 + 2 and the (+ 1 2) in x = (+ x (+ 1 2)). The former only uses two "addresses"
 // and the latter uses three. 
-// 
 func RemoveComplexOperandsFromExpr(expr *FlatExpr, makeAtomic bool, getVar func() *Var) (*FlatExpr, []*FlatAssignment, error) {
 	var newExpr *FlatExpr
 	var newAssignments []*FlatAssignment
