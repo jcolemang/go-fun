@@ -5,13 +5,17 @@ import (
 
 // Main Language
 type FlatProgram struct {
-	Exprs []*FlatExpr
+	Statements []*FlatStatement
+}
+
+type FlatStatement struct {
+	Expr *FlatExpr
+	Assignment *FlatAssignment
 }
 
 type FlatExpr struct {
 	Num *Num
     Var *Var
-	Assignment *FlatAssignment
     App []*FlatExpr
 }
 

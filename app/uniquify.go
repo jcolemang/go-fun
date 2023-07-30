@@ -3,8 +3,6 @@ package main
 import (
     "errors"
 	"fmt"
-
-	"github.com/alecthomas/repr"
 )
 
 type Env struct {
@@ -24,7 +22,7 @@ func Lookup(variable *Var, env *Env) (*Var, bool) {
 	return Lookup(variable, env.Parent)
 }
 
-func Uniquify(prog *Program) (*Program, error) {
+func Uniquify(prog *Program, getVar func() *Var) (*Program, error) {
 	fmt.Println("Uniquifying program")
 	env := &Env{
 		Vars: make(map[Var]*Var),
@@ -33,7 +31,7 @@ func Uniquify(prog *Program) (*Program, error) {
 		env.Vars[*v] = v
 	}
 
-	uniqExpr, err := UniquifyExpr(prog.Expr, env, GetVarGenerator())
+	uniqExpr, err := UniquifyExpr(prog.Expr, env, getVar)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +49,6 @@ func UniquifyExpr(expr *Expr, env *Env, getVar func() *Var) (*Expr, error) {
 		if ok {
 			return &Expr{Var: v}, nil
 		} else {
-			repr.Println(env)
 			return nil, errors.New("Unbound variable: " + expr.Var.Name)
 		}
 	case expr.Let != nil:	

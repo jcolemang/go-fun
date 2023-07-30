@@ -23,7 +23,9 @@ func Compile(prog *Program) (*FlatProgram, error) {
 	fmt.Println("Initial program")
 	repr.Println(prog)
 
-	newProg, err := Uniquify(prog)
+	getVar := GetVarGenerator()
+
+	newProg, err := Uniquify(prog, getVar)
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +40,14 @@ func Compile(prog *Program) (*FlatProgram, error) {
 
 	fmt.Println("Program after Flatten")
 	repr.Println(flatProg)
-	
-	return flatProg, nil
+
+	simpleProg, err := RemoveComplexOperands(flatProg, getVar)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Program after RemoveComplexOperands")
+	repr.Println(simpleProg)
+
+	return simpleProg, nil
 }

@@ -2,7 +2,6 @@ package main
 
 import (
     "errors"
-	"fmt"
 )
 
 // Need to turn
@@ -11,21 +10,41 @@ import (
 // (let ((a 5) (b 10)) (let ((temp0 (+ b 5)) (+ a temp0))))
 // in other words, this is making explicit the order of operations.
 // in other other words, generating three address code
-func RemoveComplexOperands(prog *Program) (*Program, error) {
-	fmt.Println("Removing complex operands")
-    GetNewVar := GetVarGenerator()
-
-    newExpr, assignments, err := RemoveComplexOperandsFromExpr(prog.Expr, GetNewVar)
-    if err != nil {
-        return nil, err
-    }
-	if len(assignments) != 0 {
-		return nil, errors.New("Left over assignments")
+func RemoveComplexOperands(prog *FlatProgram, getVar func() *Var) (*FlatProgram, error) {
+	var newStatements []*FlatStatement
+	for _, s := range(prog.Statements) {
+		statement, newAssigns, err := RemoveComplexOperandsFromStatement(s, getVar)
+		if err != nil {
+			return nil, err
+		}
+		for _, a := range(newAssigns) {
+			newStatements = append(newStatements, &FlatStatement{Assignment: a})
+		}
+		newStatements = append(newStatements, statement)
 	}
 
-	return &Program{
-        Expr: newExpr,
+	return &FlatProgram{
+        Statements: newStatements,
     }, nil
+}
+
+func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() *Var) (*FlatStatement, []*FlatAssignment, error) {
+	switch {
+	case statement.Expr != nil:
+		_, _, err := RemoveComplexOperandsFromExpr(statement.Expr, false, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, nil, nil
+	case statement.Assignment != nil:
+		_, _, err := RemoveComplexOperandsFromExpr(statement.Assignment.Expr, true, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, nil, nil
+	default:
+		return nil, nil, errors.New("Unrecognized expression")
+	}
 }
 
 // We recommend implementing this pass with an auxiliary method named rco_exp
@@ -34,87 +53,38 @@ func RemoveComplexOperands(prog *Program) (*Program, error) {
 // pair consisting of the new expression and a list of pairs, associating new temporary
 // variables with their initializing expressions.
 // part of why this is annoying is uniquify should come first
-func RemoveComplexOperandsFromExpr(expr *Expr, GetNewVar func() *Var) (*Expr, []*Assignment, error) {
+//
+// bool is necessary because we need to be able to distinguish between the (+ 1 2) in
+// x = 1 + 2 and the (+ 1 2) in x = (+ x (+ 1 2)). The former only uses two "addresses"
+// and the latter uses three. 
+// 
+func RemoveComplexOperandsFromExpr(expr *FlatExpr, makeAtomic bool, GetNewVar func() *Var) (*FlatExpr, []*FlatAssignment, error) {
     switch {
     case expr.Num != nil:
-        return expr, []*Assignment{}, nil
+        return expr, []*FlatAssignment{}, nil
     case expr.Var != nil:
-        return expr, []*Assignment{}, nil
-    case expr.Let != nil:
-        return nil, []*Assignment{}, nil
+        return expr, []*FlatAssignment{}, nil
     case expr.App != nil:
-        // (+ (+ 1 (+ 2 3)) (+ 4 5)) ->
-		// (let ((tmp1 (+ 2 3))
-		//       (tmp2 (+ 1 tmp1))
-		//       (tmp3 (+ 2 3))
-	    //   (+ tmp1 tmp2 tmp3))
-		// (+ 1 (let ((x 2)) x)) ->
-		// 
-		var subExprs []*Expr
-		var assignments []*Assignment
+		if makeAtomic {
 
-		for _, e := range(expr.App) {
-			// (+ (+ 1 2) 3)
-			// get tmp1 = (+ 1 2)
-			// add let to assign to returned subexpression
-			if IsOperandPrimitive(e) {
-				subExprs = append(subExprs, e)
-			} else {
-				// e here is (+ 1 2)
-				// no assignments
-				// should create a new variable and assign to e
-				// then replace the current subexpression with that new variable
-				e, assgns, err := RemoveComplexOperandsFromExpr(e, GetNewVar)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				newVar := GetNewVar()
-				newAssignment := Assignment{Ref: newVar, Expr: e}
-
-				subExprs = append(subExprs, &Expr{Var: newVar})
-				assignments = append(append(assignments, assgns...), &newAssignment)
-			}
-		}
-
-		var newExpr Expr
-		if len(assignments) == 0 {
-			newExpr = Expr{
-				App: subExprs,
-			}
 		} else {
-			newExpr = Expr{
-				Let: &LetExpr{
-					LetAssignments: assignments,
-					LetBody: &Expr{
-						App: subExprs,
-					},
-				},
-			}
+
 		}
-
-
-		// no new assignments to pass up
-        return &newExpr, []*Assignment{}, nil
+        return nil, nil, errors.New("Getting to this later")
     default:
         return nil, nil, errors.New("Unrecognized expression type")
     }
 }
 
-func IsOperandPrimitive(expr *Expr) bool {
+func IsExprAtomic(expr *FlatExpr) bool {
 	switch {
-    case expr.Num != nil:
-        return true
-    case expr.Var != nil:
-        return true
-    case expr.Let != nil:
-        return false
-    case expr.App != nil:
-        return false
-    default:
-        // errors should be checked elsewhere
-        return false
-    }
+	case expr.Num != nil:
+		return true
+	case expr.Var != nil:
+		return true
+	case expr.App != nil:
+		return false
+	default:
+		return false
+	}
 }
-
-

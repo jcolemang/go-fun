@@ -10,14 +10,14 @@ func Flatten(progOrig *Program) (*FlatProgram, error) {
 		return nil, err
 	}
 
-	var newExprs []*FlatExpr
+	var newStatements []*FlatStatement
 	for _, a := range(assigns) {
-		newExprs = append(newExprs, &FlatExpr{Assignment: a})
+		newStatements = append(newStatements, &FlatStatement{Assignment: a})
 	}
-	newExprs = append(newExprs, flatExpr)
+	newStatements = append(newStatements, &FlatStatement{Expr: flatExpr})
 
 	return &FlatProgram{
-		Exprs: newExprs,
+		Statements: newStatements,
 	}, nil
 }
 
