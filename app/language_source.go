@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
     "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -32,13 +34,24 @@ type Num struct {
 }
 
 type Var struct {
-    Name string `@Ident`
+	Primitive string `@"+"`
+    Name string      `| @Ident`
     Generated int
+}
+
+func VarToString(v *Var) string {
+	if v.Name != "" {
+		return v.Name
+	} else if v.Primitive != "" {
+		return v.Primitive
+	} else {
+		return "tmp" + fmt.Sprint(v.Generated)
+	}
 }
 
 func GetBuiltIns() []*Var {
 	return []*Var{
-		&Var{Name: "+"},
+		&Var{Primitive: "+"},
 	}
 }
 

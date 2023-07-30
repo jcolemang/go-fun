@@ -29,10 +29,6 @@ func FlattenExpr(expr *Expr) (*FlatExpr, []*FlatAssignment, error) {
 	case expr.Var != nil:
 		return &FlatExpr{Var: expr.Var}, assignments, nil
 	case expr.Let != nil:
-		// (let ((x (let ((y 1)) y)) x)
-		// y = 1
-		// x = y
-		// x
 		var letAssignAssigns []*FlatAssignment
 		for _, a := range(expr.Let.LetAssignments) {
 			flattenedExpr, subAssigns, err := FlattenExpr(a.Expr)

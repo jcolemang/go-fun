@@ -19,6 +19,9 @@ import (
 // (+ 1 (+ x_1 x_2))
 // step 3: Next comes removing the complex expressions as specified in the textbook, and continuing on from there.
 
+// Other possible passes:
+// expanding primitive mathematical expressions (+ 1 2 3) -> (+ 1 (+ 2 3)) to make arbitrary numbers of arguments possible
+
 func Compile(prog *Program) (*FlatProgram, error) {	
 	fmt.Println("Initial program")
 	repr.Println(prog)
@@ -39,7 +42,7 @@ func Compile(prog *Program) (*FlatProgram, error) {
 	}
 
 	fmt.Println("Program after Flatten")
-	repr.Println(flatProg)
+	fmt.Println(FlatProgramToString(flatProg))
 
 	simpleProg, err := RemoveComplexOperands(flatProg, getVar)
 	if err != nil {
@@ -47,7 +50,7 @@ func Compile(prog *Program) (*FlatProgram, error) {
 	}
 
 	fmt.Println("Program after RemoveComplexOperands")
-	repr.Println(simpleProg)
+	fmt.Println(FlatProgramToString(simpleProg))
 
 	return simpleProg, nil
 }
