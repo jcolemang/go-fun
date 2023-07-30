@@ -4,26 +4,26 @@ import (
     "errors"
 )
 
-func RemoveComplexOperands(prog *FlatProgram, getVar func() *Var) (*FlatProgram, error) {
-	var newStatements []*FlatStatement
+func RemoveComplexOperands(prog *FlatProgram, getVar func() *Var) (*SimpleProgram, error) {
+	var newStatements []*SimpleStatement
 	for _, s := range(prog.Statements) {
 		statements, newAssigns, err := RemoveComplexOperandsFromStatement(s, getVar)
 		if err != nil {
 			return nil, err
 		}
 		for _, a := range(newAssigns) {
-			newStatements = append(newStatements, &FlatStatement{Assignment: a})
+			newStatements = append(newStatements, &SimpleStatement{Assignment: a})
 		}
 		newStatements = append(newStatements, statements...)
 	}
 
-	return &FlatProgram{
+	return &SimpleProgram{
         Statements: newStatements,
     }, nil
 }
 
-func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() *Var) ([]*FlatStatement, []*FlatAssignment, error) {
-	var newStatements []*FlatStatement
+func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() *Var) ([]*SimpleStatement, []*SimpleAssignment, error) {
+	var newStatements []*SimpleStatement
 	switch {
 	case statement.Expr != nil:
 		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Expr, false, getVar)
@@ -31,9 +31,9 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 			return nil, nil, err
 		}
 		for _, a := range(newAssigns) {
-			newStatements = append(newStatements, &FlatStatement{Assignment: a})
+			newStatements = append(newStatements, &SimpleStatement{Assignment: a})
 		}
-		newStatements = append(newStatements, &FlatStatement{Expr: newExpr})
+		newStatements = append(newStatements, &SimpleStatement{Expr: newExpr})
 		return newStatements, nil, nil
 	case statement.Assignment != nil:
 		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Assignment.Expr, true, getVar)
@@ -41,9 +41,9 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 			return nil, nil, err
 		}
 		for _, a := range(newAssigns) {
-			newStatements = append(newStatements, &FlatStatement{Assignment: a})
+			newStatements = append(newStatements, &SimpleStatement{Assignment: a})
 		}
-		newStatements = append(newStatements, &FlatStatement{Assignment: &FlatAssignment{Ref: statement.Assignment.Ref, Expr: newExpr}})
+		newStatements = append(newStatements, &SimpleStatement{Assignment: &SimpleAssignment{Ref: statement.Assignment.Ref, Expr: newExpr}})
 
 		return newStatements, nil, nil
 	default:
@@ -53,54 +53,49 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 
 // bool is necessary because we need to be able to distinguish between the (+ 1 2) in
 // x = 1 + 2 and the (+ 1 2) in x = (+ x (+ 1 2)). The former only uses two "addresses"
-// and the latter uses three. 
-func RemoveComplexOperandsFromExpr(expr *FlatExpr, makeAtomic bool, getVar func() *Var) (*FlatExpr, []*FlatAssignment, error) {
-	var newExpr *FlatExpr
-	var newAssignments []*FlatAssignment
+// and the latter uses three as it is a subexpression in a larger expression
+func RemoveComplexOperandsFromExpr(expr *FlatExpr, makeAtomic bool, getVar func() *Var) (*SimpleExpr, []*SimpleAssignment, error) {
     switch {
     case expr.Num != nil:
-        return expr, []*FlatAssignment{}, nil
+        return &SimpleExpr{Num: expr.Num}, []*SimpleAssignment{}, nil
     case expr.Var != nil:
-        return expr, []*FlatAssignment{}, nil
+        return &SimpleExpr{Var: expr.Var}, []*SimpleAssignment{}, nil
     case expr.App != nil:
-		if IsExprSimple(expr) {
-			if makeAtomic {
-				newVar := getVar()
-				newAssignment := &FlatAssignment{
-					Ref: newVar,
-					Expr: expr,
-				}	
-				newExpr = &FlatExpr{Var: newVar}
-				newAssignments = append(newAssignments, newAssignment)
-				return newExpr, newAssignments, nil
-			} else {
-				return expr, newAssignments, nil
-			}
-		} else {
-			// Program after Flatten
-			// ( + 1 ( + 2 ( + 3 4  )  ) ( + 5 6  )  )
-
-			// Program after RemoveComplexOperands
-			// tmp1 = ( + 3 4  )
-			// tmp2 = ( tmp1  )
-			// tmp3 = ( + 5 6  )
-			// ( tmp3  )
-			newExpr = &FlatExpr{App: []*FlatExpr{}}
-			for _, e := range(expr.App) {
-				subExpr, assigns, err := RemoveComplexOperandsFromExpr(e, true, getVar)
-				if err != nil {
-					return nil, nil, err
-				}
-				
-				newExpr.App = append(newExpr.App, subExpr)
-				newAssignments = append(newAssignments, assigns...)
-			}
-			// expression is now simple, don't need to duplicate the IsExprSimple branch logic
-			finalExpr, finalAssigns, err := RemoveComplexOperandsFromExpr(newExpr, makeAtomic, getVar)
+		var newExprs []*SimpleExpr
+		var newAssignments []*SimpleAssignment
+		for _, e := range(expr.App) {
+			// arguments to a function must be atomic
+			subExpr, subExprAssignments, err := RemoveComplexOperandsFromExpr(e, true, getVar)
 			if err != nil {
 				return nil, nil, err
 			}
-			return finalExpr, append(newAssignments, finalAssigns...), nil
+			newExprs = append(newExprs, subExpr)
+			newAssignments = append(newAssignments, subExprAssignments...)
+		}
+
+		rator, rands := newExprs[0], newExprs[1:]
+		if rator.Var == nil {
+			return nil, nil, errors.New("Operator must be atomic")
+		}
+
+		newApp := &SimpleExpr{
+			App: &SimpleApplication{
+				Operator: rator.Var,
+				Operands: rands,
+			},
+		}
+		if makeAtomic {
+			newVar := getVar()
+			newAssignment := &SimpleAssignment{
+				Ref: newVar,
+				Expr: newApp,
+			}
+			newExpr := &SimpleExpr{
+				Var: newVar,
+			}
+			return newExpr, append(newAssignments, newAssignment), nil
+		} else {
+			return newApp, newAssignments, nil
 		}
     default:
         return nil, nil, errors.New("Unrecognized expression type")

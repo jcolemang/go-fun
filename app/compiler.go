@@ -52,7 +52,8 @@ func Compile(prog *Program) (*VarAssemblyProgram, error) {
 	}
 
 	fmt.Println("Program after Flatten")
-	fmt.Println(FlatProgramToString(flatProg))
+	repr.Println(flatProg)
+	// fmt.Println(FlatProgramToString(flatProg))
 
 	// turning
 	// (+ 1 (+ 2 (+ 3 4)))
@@ -66,7 +67,8 @@ func Compile(prog *Program) (*VarAssemblyProgram, error) {
 	}
 
 	fmt.Println("Program after RemoveComplexOperands")
-	fmt.Println(FlatProgramToString(simpleProg))
+	repr.Println(simpleProg)
+	// fmt.Println(FlatProgramToString(simpleProg))
 
 	varAssemblyProg, err := SelectInstructions(simpleProg)
 	if err != nil {

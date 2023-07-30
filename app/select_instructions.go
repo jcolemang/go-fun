@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-func SelectInstructions(prog *FlatProgram) (*VarAssemblyProgram, error) {
+func SelectInstructions(prog *SimpleProgram) (*VarAssemblyProgram, error) {
 	var instrs []*VarAssemblyInstr
 	for _, s := range(prog.Statements) {
 		stmtInstrs, err := SelectInstructionsStmt(s)
@@ -16,7 +16,7 @@ func SelectInstructions(prog *FlatProgram) (*VarAssemblyProgram, error) {
 	return &VarAssemblyProgram{Instrs: instrs}, nil
 }
 
-func SelectInstructionsStmt(stmt *FlatStatement) ([]*VarAssemblyInstr, error) {
+func SelectInstructionsStmt(stmt *SimpleStatement) ([]*VarAssemblyInstr, error) {
 	switch {
 	case stmt.Expr != nil:	
 		// truly nothing to do with a naked expression here
@@ -44,11 +44,11 @@ func SelectInstructionsStmt(stmt *FlatStatement) ([]*VarAssemblyInstr, error) {
 			},
 		}), nil
 	default:
-		return nil, errors.New("Unrecognized FlatStatement")
+		return nil, errors.New("Unrecognized SimpleStatement")
 	}
 }
 
-func SelectInstructionsExpr(expr *FlatExpr) (*VarAssemblyImmediate, []*VarAssemblyInstr, error) {
+func SelectInstructionsExpr(expr *SimpleExpr) (*VarAssemblyImmediate, []*VarAssemblyInstr, error) {
 	switch {
 	case expr.Num != nil:
 		return &VarAssemblyImmediate{
@@ -60,6 +60,9 @@ func SelectInstructionsExpr(expr *FlatExpr) (*VarAssemblyImmediate, []*VarAssemb
 				Generated: expr.Var.Generated,
 			},
 		}, []*VarAssemblyInstr{}, nil
+	// case expr.App != nil:
+	// 	rator, rands := expr.App[0], expr.App[1:]
+
 	default:
 		return nil, nil, errors.New("Haven't gotten to this yet")
 	}	
