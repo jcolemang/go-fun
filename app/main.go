@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/alecthomas/kong"
-	"github.com/alecthomas/repr"
 )
 
 // Code to actually run
@@ -20,11 +19,9 @@ func main() {
 		ctx.FatalIfErrorf(err)
 		ast, err := parser.Parse(file, r)
 		r.Close()
-		repr.Println(ast)
 		ctx.FatalIfErrorf(err)
 
-		newProg, err := Compile(ast)
-		repr.Println(newProg)
+		_, err = Compile(ast)
 		ctx.FatalIfErrorf(err)
 	}
 }

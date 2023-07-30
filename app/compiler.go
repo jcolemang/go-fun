@@ -1,5 +1,11 @@
 package main
 
+import (
+	"fmt"
+
+	"github.com/alecthomas/repr"
+)
+
 // step 1: Uniquify all variable names
 // (+ 1 (let ((x 2)) (+ x (let ((x 3)) x)))))))) ->
 // (+ 1 (let ((x_1 2)) (+ x_1 (let ((x_2 3)) x_2)))
@@ -13,10 +19,25 @@ package main
 // (+ 1 (+ x_1 x_2))
 // step 3: Next comes removing the complex expressions as specified in the textbook, and continuing on from there.
 
-func Compile(prog *Program) (*Program, error) {
+func Compile(prog *Program) (*FlatProgram, error) {	
+	fmt.Println("Initial program")
+	repr.Println(prog)
+
 	newProg, err := Uniquify(prog)
 	if err != nil {
 		return nil, err
 	}
-	return newProg, nil
+
+	fmt.Println("Program after Uniquify")
+	repr.Println(newProg)
+
+	flatProg, err := Flatten(newProg)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Program after Flatten")
+	repr.Println(flatProg)
+	
+	return flatProg, nil
 }
