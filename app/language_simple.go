@@ -3,7 +3,9 @@ package main
 import (
 )
 
-// Main Language
+// Simplifies language with significant constraints around
+// application and assignment
+
 type SimpleProgram struct {
 	Statements []*SimpleStatement
 }
@@ -14,14 +16,18 @@ type SimpleStatement struct {
 }
 
 type SimpleExpr struct {
-	Num *Num
-    Var *Var
+	Primitive *SimplePrimitive
     App *SimpleApplication
+}
+
+type SimplePrimitive struct {
+	Num *Num
+	Var *Var
 }
 
 type SimpleApplication struct {
 	Operator *Var
-	Operands []*SimpleExpr
+	Operands []*SimplePrimitive
 }
 
 type SimpleAssignment struct {

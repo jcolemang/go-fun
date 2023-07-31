@@ -50,20 +50,41 @@ func SelectInstructionsStmt(stmt *SimpleStatement) ([]*VarAssemblyInstr, error) 
 
 func SelectInstructionsExpr(expr *SimpleExpr) (*VarAssemblyImmediate, []*VarAssemblyInstr, error) {
 	switch {
-	case expr.Num != nil:
-		return &VarAssemblyImmediate{
-			Int: expr.Num.Value,
-		}, []*VarAssemblyInstr{}, nil
-	case expr.Var != nil:
-		return &VarAssemblyImmediate{
-			Var: &VarAssemblyVar{
-				Generated: expr.Var.Generated,
-			},
-		}, []*VarAssemblyInstr{}, nil
-	// case expr.App != nil:
-	// 	rator, rands := expr.App[0], expr.App[1:]
+	case expr.Primitive != nil:
+		switch {
+		case expr.Primitive.Num != nil:
+			return &VarAssemblyImmediate{
+				Int: expr.Primitive.Num.Value,
+			}, []*VarAssemblyInstr{}, nil
+		case expr.Primitive.Var != nil:
+			return &VarAssemblyImmediate{
+				Var: &VarAssemblyVar{
+					Generated: expr.Primitive.Var.Generated,
+				},
+			}, []*VarAssemblyInstr{}, nil
+		default:
+			return nil, nil, errors.New("Unrecognized primitive type")
+		}
+	case expr.App != nil:
+		switch {
+		case expr.App.Operator.Name != "":
+			return nil, nil, errors.New("An error was made and an unprocessed variable made it through")
+		case expr.App.Operator.Generated != 0:
+			return nil, nil, errors.New("User defined functions will go here")
+		case expr.App.Operator.Primitive != "":
+			switch expr.App.Operator.Primitive {
+			default:
+				return nil, nil, errors.New("Unrecognized primitive")
+			}
+		default:
+			return nil, nil, errors.New("Unrecognized variable type")
+		}
 
 	default:
-		return nil, nil, errors.New("Haven't gotten to this yet")
+		return nil, nil, errors.New("Unrecognized SimpleExpr type")
 	}	
+}	
+
+func HandlePrimitive(primitive string, operands []*SimplePrimitive) ([]*VarAssemblyInstr, error) {
+	return nil, errors.New("Getting there")
 }

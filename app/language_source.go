@@ -8,6 +8,8 @@ import (
 )
 
 // Main Language
+// This is the source language that this compiler is targeted for
+
 type Program struct {
 	Expr *Expr `@@`
 }
