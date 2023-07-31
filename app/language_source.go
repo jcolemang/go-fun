@@ -33,7 +33,7 @@ type Assignment struct {
 
 // have this separated to also handle floats
 type Num struct {
-	Value int `@Int`
+	Int *int `@Int`
 }
 
 type Var struct {

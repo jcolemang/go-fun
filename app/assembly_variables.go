@@ -14,11 +14,8 @@ type VarAssemblyInstr struct {
 
 type VarAssemblyImmediate struct {
 	Var *VarAssemblyVar
-	Int int
-}
-
-type VarAssemblyInt struct {
-	Value int
+	Int *int
+	Register *Register
 }
 
 type VarAssemblyVar struct {

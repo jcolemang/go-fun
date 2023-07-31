@@ -25,13 +25,13 @@ type X86Instr struct {
 
 type X86Arg struct {
     X86Int *int               `"$"@Int`
-    X86Reg *X86Register       `| @@`
+    X86Reg *Register       `| @@`
 	X86Offset *int            `| @Int`
-	X86OffsetReg *X86Register `  "("@@")"`
+	X86OffsetReg *Register `  "("@@")"`
 }
 
-type X86Register struct {
-	Name *string `"%"@Ident`
+type Register struct {
+	Name string `"%"@Ident`
 }
 
 func GetX86Parser() *participle.Parser[X86Program] {
