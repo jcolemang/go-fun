@@ -2,7 +2,6 @@ package main
 
 import (
     "errors"
-	"fmt"
 )
 
 type Env struct {
@@ -23,7 +22,6 @@ func Lookup(variable *Var, env *Env) (*Var, bool) {
 }
 
 func Uniquify(prog *Program, getVar func() *Var) (*Program, error) {
-	fmt.Println("Uniquifying program")
 	env := &Env{
 		Vars: make(map[Var]*Var),
 	}

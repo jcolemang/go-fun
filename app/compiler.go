@@ -52,8 +52,8 @@ func Compile(prog *Program) (*VarAssemblyProgram, error) {
 	}
 
 	fmt.Println("Program after Flatten")
-	repr.Println(flatProg)
-	// fmt.Println(FlatProgramToString(flatProg))
+	// repr.Println(flatProg)
+	fmt.Println(FlatProgramToString(flatProg))
 
 	// turning
 	// (+ 1 (+ 2 (+ 3 4)))
@@ -67,10 +67,17 @@ func Compile(prog *Program) (*VarAssemblyProgram, error) {
 	}
 
 	fmt.Println("Program after RemoveComplexOperands")
-	repr.Println(simpleProg)
-	// fmt.Println(FlatProgramToString(simpleProg))
+	fmt.Println(SimpleProgramToString(simpleProg))
 
-	varAssemblyProg, err := SelectInstructions(simpleProg)
+	simpleExitProg, err := AddExitVariable(simpleProg, getVar)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Program after AddExitVariable")
+	fmt.Println(SimpleExitProgramToString(simpleExitProg))
+
+	varAssemblyProg, err := SelectInstructions(simpleExitProg)
 	if err != nil {
 		return nil, err
 	}

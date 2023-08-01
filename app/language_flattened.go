@@ -47,7 +47,7 @@ func FlatStatementToString(statement *FlatStatement) string {
 func FlatExprToString(expr *FlatExpr) string {
 	switch {
 	case expr.Num != nil:
-		return fmt.Sprint(expr.Num.Int)
+		return fmt.Sprint(*expr.Num.Int)
 	case expr.Var != nil:
 		return VarToString(expr.Var)
 	case expr.App != nil:

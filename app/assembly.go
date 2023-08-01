@@ -25,9 +25,9 @@ type X86Instr struct {
 
 type X86Arg struct {
     X86Int *int               `"$"@Int`
-    X86Reg *Register       `| @@`
+    X86Reg *Register          `| @@`
 	X86Offset *int            `| @Int`
-	X86OffsetReg *Register `  "("@@")"`
+	X86OffsetReg *Register    `"("@@")"`
 }
 
 type Register struct {

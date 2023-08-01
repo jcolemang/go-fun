@@ -2,9 +2,12 @@ package main
 
 import (
 	"errors"
+
+	"fmt"
+	"github.com/alecthomas/repr"
 )
 
-func SelectInstructions(prog *SimpleProgram) (*VarAssemblyProgram, error) {
+func SelectInstructions(prog *SimpleExitProgram) (*VarAssemblyProgram, error) {
 	var instrs []*VarAssemblyInstr
 	for _, s := range(prog.Statements) {
 		stmtInstrs, err := SelectInstructionsStmt(s)
@@ -105,42 +108,84 @@ func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAss
 	default:
 		return nil, errors.New("Unrecognized SimpleExpr type")
 	}	
-}	
+}
+
+func PrimitiveToImmediate(primitive *SimplePrimitive) (*VarAssemblyImmediate, error) {
+	switch {
+	case primitive.Num != nil && primitive.Num.Int != nil:
+		return &VarAssemblyImmediate{Int: primitive.Num.Int}, nil
+	case primitive.Var != nil:
+		return &VarAssemblyImmediate{Var: &VarAssemblyVar{Generated: primitive.Var.Generated}}, nil
+	default:
+		return nil, errors.New("Unrecognized primitive")
+	}
+}
 
 func HandlePrimitive(primitive string, operands []*SimplePrimitive, target *VarAssemblyVar) ([]*VarAssemblyInstr, error) {
+	fmt.Println("Debugging nil")
+	fmt.Println("Primitive")
+	repr.Println(primitive)
+	fmt.Println("Operands")
+	repr.Println(operands)
+	fmt.Println("Target")
+	repr.Println(target)
+
 	switch primitive {
 	case "+":
 		if len(operands) != 2 {
 			return nil, errors.New("Cannot currently handle arbitrary numbers of arguments to addition")
 		}
 		first, second := operands[0], operands[1]
+		firstImm, err := PrimitiveToImmediate(first)
+		if err != nil {
+			return nil, err
+		}
+		secondImm, err := PrimitiveToImmediate(second)
+		if err != nil {
+			return nil, err
+		}
+
 		switch {
-		// could potentially just do the math here
-		case first.Num != nil && second.Num != nil:
+		case first.Var != nil && first.Var.Generated == target.Generated:
 			return []*VarAssemblyInstr{
 				&VarAssemblyInstr{
-					Movq: [2]*VarAssemblyImmediate{
-						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
-						&VarAssemblyImmediate{Int: first.Num.Int},
+					Addq: [2]*VarAssemblyImmediate{
+						secondImm,
+						firstImm,
 					},
 				},
+			}, nil
+		case second.Var != nil && second.Var.Generated == target.Generated:
+			return []*VarAssemblyInstr{
 				&VarAssemblyInstr{
 					Addq: [2]*VarAssemblyImmediate{
-						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
-						&VarAssemblyImmediate{Int: second.Num.Int},
-					},
-				},
-				&VarAssemblyInstr{
-					Movq: [2]*VarAssemblyImmediate{
-						&VarAssemblyImmediate{Var: target},
-						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
+						firstImm,
+						secondImm,
 					},
 				},
 			}, nil
 		default:
-			return nil, errors.New("Unhandled add case")
+			return []*VarAssemblyInstr{
+				&VarAssemblyInstr{
+					Movq: [2]*VarAssemblyImmediate{
+						firstImm,
+						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
+					},
+				},
+				&VarAssemblyInstr{
+					Addq: [2]*VarAssemblyImmediate{
+						secondImm,
+						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
+					},
+				},
+				&VarAssemblyInstr{
+					Movq: [2]*VarAssemblyImmediate{
+						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
+						&VarAssemblyImmediate{Var: target},
+					},
+				},
+			}, nil
 		}
-
 	case "print":
 		return nil, errors.New("Need to define print")
 	case "read":
