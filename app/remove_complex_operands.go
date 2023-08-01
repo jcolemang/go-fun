@@ -57,9 +57,9 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 // x = 1 + 2 and the (+ 1 2) in x = (+ x (+ 1 2)). The former only uses two "addresses"
 // and the latter uses three as it is a subexpression in a larger expression
 // I think that makeAtomic can be removed and assumed false but I also have a suspicion that it will matter for user defined functions.
-// Currently the output of a function call can go directly into a variable with addq but I'm not sure if that same 
+// Currently the output of a function call can go directly into a variable with addq but I'm not sure if that same
 // logic works for user defined functions. Does the return value go into a defined register to be used? Would we
-// then have to worry about multiple function calls? Would that even possibly come up if we're the ones generating 
+// then have to worry about multiple function calls? Would that even possibly come up if we're the ones generating
 // the instructions? Questions for a later day.
 func RemoveComplexOperandsFromExpr(expr *FlatExpr, makeAtomic bool, getVar func() *Var) (*SimpleExpr, []*SimpleAssignment, error) {
     switch {

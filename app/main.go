@@ -20,7 +20,6 @@ func main() {
 		ast, err := parser.Parse(file, r)
 		r.Close()
 		ctx.FatalIfErrorf(err)
-
 		_, err = Compile(ast)
 		ctx.FatalIfErrorf(err)
 	}

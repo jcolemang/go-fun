@@ -4,10 +4,10 @@ import (
     "errors"
 )
 
-// main reason to add here is just because it is the lowest level "language" with 
-// basic assignments where naked expressions don't matter. Sure this would also 
+// main reason to add here is just because it is the lowest level "language" with
+// basic assignments where naked expressions don't matter. Sure this would also
 // work elsewhere but this seems most reasonable at the moment
-func AddExitVariable(prog *SimpleProgram, getVar func() *Var) (*SimpleExitProgram, error) {	
+func AddExitVariable(prog *SimpleProgram, getVar func() *Var) (*SimpleExitProgram, error) {
 	statements := prog.Statements
 	last, statements := statements[len(statements) - 1], statements[:len(statements) - 1]
 	var exit *Var
@@ -27,7 +27,7 @@ func AddExitVariable(prog *SimpleProgram, getVar func() *Var) (*SimpleExitProgra
 	} else {
 		return nil, errors.New("Unrecognized SimpleStatement")
 	}
-	
+
 	return &SimpleExitProgram{
 		Statements: append(statements, newLast),
 		Exit: exit,

@@ -2,9 +2,6 @@ package main
 
 import (
 	"errors"
-
-	"fmt"
-	"github.com/alecthomas/repr"
 )
 
 func SelectInstructions(prog *SimpleExitProgram) (*VarAssemblyProgram, error) {
@@ -21,7 +18,7 @@ func SelectInstructions(prog *SimpleExitProgram) (*VarAssemblyProgram, error) {
 
 func SelectInstructionsStmt(stmt *SimpleStatement) ([]*VarAssemblyInstr, error) {
 	switch {
-	case stmt.Expr != nil:	
+	case stmt.Expr != nil:
 		// truly nothing to do with just the naked immediate here
 		instrs, err := SelectInstructionsExpr(stmt.Expr, nil)
 		if err != nil {
@@ -39,7 +36,7 @@ func SelectInstructionsStmt(stmt *SimpleStatement) ([]*VarAssemblyInstr, error) 
 		if err != nil {
 			return nil, err
 		}
-		
+
 		return instrs, nil
 	default:
 		return nil, errors.New("Unrecognized SimpleStatement")
@@ -73,7 +70,7 @@ func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAss
 				}, nil
 			} else {
 				return []*VarAssemblyInstr{}, nil
-			} 
+			}
 		case expr.Primitive.Var != nil:
 			return []*VarAssemblyInstr{
 				&VarAssemblyInstr{
@@ -107,7 +104,7 @@ func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAss
 		}
 	default:
 		return nil, errors.New("Unrecognized SimpleExpr type")
-	}	
+	}
 }
 
 func PrimitiveToImmediate(primitive *SimplePrimitive) (*VarAssemblyImmediate, error) {
@@ -122,14 +119,6 @@ func PrimitiveToImmediate(primitive *SimplePrimitive) (*VarAssemblyImmediate, er
 }
 
 func HandlePrimitive(primitive string, operands []*SimplePrimitive, target *VarAssemblyVar) ([]*VarAssemblyInstr, error) {
-	fmt.Println("Debugging nil")
-	fmt.Println("Primitive")
-	repr.Println(primitive)
-	fmt.Println("Operands")
-	repr.Println(operands)
-	fmt.Println("Target")
-	repr.Println(target)
-
 	switch primitive {
 	case "+":
 		if len(operands) != 2 {

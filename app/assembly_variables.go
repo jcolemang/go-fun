@@ -8,8 +8,8 @@ type VarAssemblyProgram struct {
 }
 
 type VarAssemblyInstr struct {
-	Addq [2]*VarAssemblyImmediate
-	Movq [2]*VarAssemblyImmediate // dest val
+	Addq [2]*VarAssemblyImmediate // val dest
+	Movq [2]*VarAssemblyImmediate // val dest
 }
 
 type VarAssemblyImmediate struct {

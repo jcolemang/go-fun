@@ -49,7 +49,7 @@ func UniquifyExpr(expr *Expr, env *Env, getVar func() *Var) (*Expr, error) {
 		} else {
 			return nil, errors.New("Unbound variable: " + expr.Var.Name)
 		}
-	case expr.Let != nil:	
+	case expr.Let != nil:
 		boundVars := make(map[Var]*Var)
 		var newAssignments []*Assignment
 		for _, assignment := range(expr.Let.LetAssignments) {

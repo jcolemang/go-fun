@@ -11,7 +11,7 @@ import (
 // (+ 1 (let ((x_1 2)) (+ x_1 (let ((x_2 3)) x_2)))
 // This will be done by Uniquify
 // step 2: With unique variable names the lexical scoping rules of lets are no longer really useful
-//         and can be replaced with good ol' assignments. This also means that not everything 
+//         and can be replaced with good ol' assignments. This also means that not everything
 //         will still need to be nested expressions
 // (+ 1 (let ((x_1 2)) (+ x_1 (let ((x_2 3)) x_2))) ->
 // x_1 := 2
@@ -22,15 +22,15 @@ import (
 // Other possible passes:
 // expanding primitive mathematical expressions (+ 1 2 3) -> (+ 1 (+ 2 3)) to make arbitrary numbers of arguments possible
 
-func Compile(prog *Program) (*VarAssemblyProgram, error) {	
+func Compile(prog *Program) (*VarAssemblyProgram, error) {
 	fmt.Println("Initial program")
 	repr.Println(prog)
 
 	getVar := GetVarGenerator()
 
-	// turning 
+	// turning
 	// (+ 1 (let ((x 2)) (let ((x 3)) x)))
-	// into 
+	// into
 	// (+ 1 (let ((x_1 2)) (let ((x_2 3)) x)))
 	newProg, err := Uniquify(prog, getVar)
 	if err != nil {
@@ -42,7 +42,7 @@ func Compile(prog *Program) (*VarAssemblyProgram, error) {
 
 	// turning
 	// (+ 1 (let ((x_1 2)) (+ x_1 3)))
-	// into 
+	// into
 	// x_1 = 2
 	// tmp2 = (+ x_1 3)
 	// (+ 1 tmp2)
