@@ -62,9 +62,9 @@ func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAss
 				}
 				return []*VarAssemblyInstr{
 					&VarAssemblyInstr{
-						Movq: [2]*VarAssemblyImmediate{
-							&VarAssemblyImmediate{Var: target},
+						Movq: &[2]*VarAssemblyImmediate{
 							val,
+							&VarAssemblyImmediate{Var: target},
 						},
 					},
 				}, nil
@@ -74,13 +74,13 @@ func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAss
 		case expr.Primitive.Var != nil:
 			return []*VarAssemblyInstr{
 				&VarAssemblyInstr{
-					Movq: [2]*VarAssemblyImmediate{
-						&VarAssemblyImmediate{Var: target},
+					Movq: &[2]*VarAssemblyImmediate{
 						&VarAssemblyImmediate{
 							Var: &VarAssemblyVar{
 								Generated: expr.Primitive.Var.Generated,
 							},
 						},
+						&VarAssemblyImmediate{Var: target},
 					},
 				},
 			}, nil
@@ -138,7 +138,7 @@ func HandlePrimitive(primitive string, operands []*SimplePrimitive, target *VarA
 		case first.Var != nil && first.Var.Generated == target.Generated:
 			return []*VarAssemblyInstr{
 				&VarAssemblyInstr{
-					Addq: [2]*VarAssemblyImmediate{
+					Addq: &[2]*VarAssemblyImmediate{
 						secondImm,
 						firstImm,
 					},
@@ -147,7 +147,7 @@ func HandlePrimitive(primitive string, operands []*SimplePrimitive, target *VarA
 		case second.Var != nil && second.Var.Generated == target.Generated:
 			return []*VarAssemblyInstr{
 				&VarAssemblyInstr{
-					Addq: [2]*VarAssemblyImmediate{
+					Addq: &[2]*VarAssemblyImmediate{
 						firstImm,
 						secondImm,
 					},
@@ -156,19 +156,19 @@ func HandlePrimitive(primitive string, operands []*SimplePrimitive, target *VarA
 		default:
 			return []*VarAssemblyInstr{
 				&VarAssemblyInstr{
-					Movq: [2]*VarAssemblyImmediate{
+					Movq: &[2]*VarAssemblyImmediate{
 						firstImm,
 						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
 					},
 				},
 				&VarAssemblyInstr{
-					Addq: [2]*VarAssemblyImmediate{
+					Addq: &[2]*VarAssemblyImmediate{
 						secondImm,
 						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
 					},
 				},
 				&VarAssemblyInstr{
-					Movq: [2]*VarAssemblyImmediate{
+					Movq: &[2]*VarAssemblyImmediate{
 						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
 						&VarAssemblyImmediate{Var: target},
 					},

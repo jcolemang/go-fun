@@ -83,7 +83,7 @@ func Compile(prog *Program) (*X86Program, error) {
 	}
 
 	fmt.Println("Program after SelectInstructions")
-	repr.Println(varAssemblyProg)
+	fmt.Println(VarAssemblyProgramToString(varAssemblyProg))
 
 	assembly, err := AssignRegisters(varAssemblyProg)
 	if err != nil {
