@@ -22,7 +22,7 @@ import (
 // Other possible passes:
 // expanding primitive mathematical expressions (+ 1 2 3) -> (+ 1 (+ 2 3)) to make arbitrary numbers of arguments possible
 
-func Compile(prog *Program) (*VarAssemblyProgram, error) {
+func Compile(prog *Program) (*X86Program, error) {
 	fmt.Println("Initial program")
 	repr.Println(prog)
 
@@ -85,5 +85,13 @@ func Compile(prog *Program) (*VarAssemblyProgram, error) {
 	fmt.Println("Program after SelectInstructions")
 	repr.Println(varAssemblyProg)
 
-	return varAssemblyProg, nil
+	assembly, err := AssignRegisters(varAssemblyProg)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Program after AssignRegisters")
+	repr.Println(assembly)
+
+	return assembly, nil
 }
