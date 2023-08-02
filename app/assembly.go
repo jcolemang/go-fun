@@ -1,11 +1,14 @@
 package main
 
 import (
+	"strconv"
     "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
 // X86 Language
+// the parsing is not really necessary and this would be slightly better without it because I could use arrays with specific lengths
+// which the parsing library does not allow
 type X86Program struct {
 	X86Directives []*X86Directive `@@*`
     X86Instrs []*X86Instr         `@@*`
@@ -36,6 +39,74 @@ type Register struct {
 	// callee saved: rsp rbp rbx r12 r13 r14 r15 -> callee can use these, but must restore them, caller can use freely
 	Name string `"%"@Ident`
 }
+
+func X86ProgramToString(prog *X86Program) string {
+	s := ""
+	for _, dir := range prog.X86Directives {
+		s += X86DirectiveToString(dir) + "\n"
+	}
+	for _, instr := range prog.X86Instrs {
+		s += X86InstrToString(instr) + "\n"
+	}
+	return s
+}
+
+func X86DirectiveToString(directive *X86Directive) string {
+	return *directive.Name + " " + *directive.Arg
+}
+
+func X86InstrToString(instr *X86Instr) string {
+	switch {
+	case instr.Label != nil:
+		return *instr.Label + ":"
+	case instr.Addq != nil:
+		return "\taddq " + X86ArgToString(instr.Addq[0]) + " " + X86ArgToString(instr.Addq[1])
+	case instr.Movq != nil:
+		return "\tmovq " + X86ArgToString(instr.Movq[0]) + " " + X86ArgToString(instr.Movq[1])
+	default:
+		return "Haven't implemented print for this one yet"
+	}
+}
+
+func X86ArgToString(arg *X86Arg) string {
+	switch {
+	case arg.X86Int != nil:
+		return strconv.Itoa(*arg.X86Int)
+	case arg.X86Reg != nil:
+		return "%" + arg.X86Reg.Name
+	default:
+		// must be a stack location
+		return strconv.Itoa(*arg.X86Offset) + "(%" + arg.X86OffsetReg.Name + ")"
+	}
+}
+
+func GetLocation(i int) *X86Arg {
+	assignableRegisters := []Register{
+		Register{Name: "rcx"},
+		Register{Name: "rdx"},
+		Register{Name: "rsi"},
+		Register{Name: "rdi"},
+		Register{Name: "r8"},
+		Register{Name: "r9"},
+		Register{Name: "r10"},
+		Register{Name: "rbx"},
+		Register{Name: "r12"},
+		Register{Name: "r13"},
+		Register{Name: "r14"},
+	}
+
+	if i < len(assignableRegisters) {
+		return &X86Arg{X86Reg: &assignableRegisters[i]}
+	} else {
+		offset := (i - len(assignableRegisters) + 1) * -8
+		return &X86Arg{
+			X86Offset: &offset,
+			X86OffsetReg: &Register{Name: "rbp"}, // base pointer
+		}
+	}
+}
+
+
 
 func GetArgumentRegisters() []*Register {
 	return []*Register{

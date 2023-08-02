@@ -52,7 +52,6 @@ func Compile(prog *Program) (*X86Program, error) {
 	}
 
 	fmt.Println("Program after Flatten")
-	// repr.Println(flatProg)
 	fmt.Println(FlatProgramToString(flatProg))
 
 	// turning
@@ -69,6 +68,7 @@ func Compile(prog *Program) (*X86Program, error) {
 	fmt.Println("Program after RemoveComplexOperands")
 	fmt.Println(SimpleProgramToString(simpleProg))
 
+	// Add a final variable to later be used as an exit code or something
 	simpleExitProg, err := AddExitVariable(simpleProg, getVar)
 	if err != nil {
 		return nil, err
@@ -77,6 +77,7 @@ func Compile(prog *Program) (*X86Program, error) {
 	fmt.Println("Program after AddExitVariable")
 	fmt.Println(SimpleExitProgramToString(simpleExitProg))
 
+	// Picks X86 instructions but keeps variables around
 	varAssemblyProg, err := SelectInstructions(simpleExitProg)
 	if err != nil {
 		return nil, err
@@ -85,13 +86,11 @@ func Compile(prog *Program) (*X86Program, error) {
 	fmt.Println("Program after SelectInstructions")
 	fmt.Println(VarAssemblyProgramToString(varAssemblyProg))
 
+	// Assigns variables to registers
 	assembly, err := AssignRegisters(varAssemblyProg)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("Program after AssignRegisters")
-	repr.Println(assembly)
 
 	return assembly, nil
 }

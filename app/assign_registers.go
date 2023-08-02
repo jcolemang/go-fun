@@ -2,23 +2,112 @@ package main
 
 import (
 	"errors"
-    "fmt"
+	"strconv"
 	"golang.org/x/exp/slices"
 )
 
 func AssignRegisters(prog *VarAssemblyProgram) (*X86Program, error) {
-    liveBeforeSets := UncoverLive(prog.Instrs)
-    fmt.Println("Live before sets")
-	fmt.Println(LiveBeforeSetsToString(liveBeforeSets))
-	return nil, errors.New("Haven't gotten here yet")
+    liveAfterSets := UncoverLive(prog.Instrs)
+	interferenceGraph := BuildInterferenceGraph(liveAfterSets)
+	colorings := ColorGraph(interferenceGraph)
+
+	newInstrs := make([]*X86Instr, len(prog.Instrs))
+	for i, instr := range prog.Instrs {
+		switch {
+		case instr.Addq != nil:
+			first, second := instr.Addq[0], instr.Addq[1]
+			firstX86, err := VarImmToX86Arg(first, colorings)
+			if err != nil {
+				return nil, err
+			}
+			secondX86, err := VarImmToX86Arg(second, colorings)
+			if err != nil {
+				return nil, err
+			}
+			newInstrs[i] = &X86Instr{
+				Addq: []*X86Arg{
+					firstX86,
+					secondX86,
+				},
+			}
+		case instr.Movq != nil:
+			// fair amount of repeated code with above case. Thought maybe fallthrough could help fix it but I'm not sure
+			first, second := instr.Movq[0], instr.Movq[1]
+			firstX86, err := VarImmToX86Arg(first, colorings)
+			if err != nil {
+				return nil, err
+			}
+			secondX86, err := VarImmToX86Arg(second, colorings)
+			if err != nil {
+				return nil, err
+			}
+			newInstrs[i] = &X86Instr{
+				Movq: []*X86Arg{
+					firstX86,
+					secondX86,
+				},
+			}
+		}
+	}
+
+	return &X86Program{
+		X86Directives: []*X86Directive{},
+		X86Instrs: newInstrs,
+	}, nil
 }
 
-func LiveBeforeSetsToString(instrs []*LiveBeforeInstr) string {
+// Two locations interfere if in any instruction there is a write to one location while the other is live.
+// Any live location subject to a write would be overwritten and so could not be read in the future of the
+// program. The exception is in movq (see below). Also note that no location can interfere with itself.
+// Consider movq s d and the live location v
+// if s = v, then v does not interfere with d because v and d contain the same value.
+// if d = v, then v does not interfere with d because v and d trivially contain the same value
+// (this second if is the same in the other instructions)
+func BuildInterferenceGraph(liveAfterSets []*LiveAfterInstr) *Graph[Location] {
+	graph := NewGraph[Location]()
+	for _, liveAfterSet := range(liveAfterSets) {
+		read, written := LocationsReadWritten(liveAfterSet.Instr)
+
+		switch {
+		case liveAfterSet.Instr.Movq != nil:
+			// this is a weird block but there is guaranteed to be only one read and written location
+			// maybe a better way to pattern match or a better data structure?
+			for readLoc, _ := range(read) {
+				graph = AddNode(*graph, readLoc)
+				for writtenLoc, _ := range(written) {
+					graph = AddNode(*graph, writtenLoc)
+					for liveAfterLoc, _ := range(liveAfterSet.LiveAfter) {
+						if liveAfterLoc != writtenLoc && liveAfterLoc != readLoc {
+							graph = AddEdge(*graph, writtenLoc, liveAfterLoc)
+						}
+					}
+				}
+			}
+		default:
+			for writtenLoc, _ := range(written) {
+				graph = AddNode(*graph, writtenLoc)
+				for liveAfterLoc, _ := range(liveAfterSet.LiveAfter) {
+					if writtenLoc != liveAfterLoc {
+						graph = AddEdge(*graph, writtenLoc, liveAfterLoc)
+					}
+				}
+			}
+		}
+	}
+	return graph
+}
+
+type LiveAfterInstr struct {
+	Instr *VarAssemblyInstr
+	LiveAfter map[Location]bool
+}
+
+func LiveBeforeSetsToString(instrs []*LiveAfterInstr) string {
     repr := ""
     for _, i := range(instrs) {
         instrStr := VarAssemblyInstrToString(i.Instr)
         liveBeforeStr := ""
-        for key, _ := range(i.LiveBefore) {
+        for key, _ := range(i.LiveAfter) {
             locationStr := LocationToStr(key)
             liveBeforeStr = liveBeforeStr + locationStr + ", "
         }
@@ -27,24 +116,19 @@ func LiveBeforeSetsToString(instrs []*LiveBeforeInstr) string {
     return repr
 }
 
-type LiveBeforeInstr struct {
-	Instr *VarAssemblyInstr
-	LiveBefore map[Location]bool
-}
-
-func UncoverLive(instructions []*VarAssemblyInstr) []*LiveBeforeInstr {
+func UncoverLive(instructions []*VarAssemblyInstr) []*LiveAfterInstr {
 	reversedInstrs := make([]*VarAssemblyInstr, len(instructions))
 	copy(reversedInstrs, instructions)
 	slices.Reverse(reversedInstrs)
 
-	processedInstrs := make([]*LiveBeforeInstr, len(reversedInstrs))
+	processedInstrs := make([]*LiveAfterInstr, len(reversedInstrs))
 	liveAfter := make(map[Location]bool)
 	for i, instr := range(reversedInstrs) {
-		liveBefore := LiveBefore(instr, liveAfter)
-		lai := LiveBeforeInstr{
+		lai := LiveAfterInstr{
 			Instr: instr,
-			LiveBefore: liveBefore,
+			LiveAfter: liveAfter,
 		}
+		liveBefore := LiveBefore(instr, liveAfter)
 		liveAfter = liveBefore
 		processedInstrs[i] = &lai
 	}
@@ -57,24 +141,68 @@ type StackLocation struct {
 	Register Register
 }
 
+// converting everything to this location type makes things awkward when I need to look up the
+// location coloring for an instruction as the instruction does not itself contain a location
 type Location struct {
-	Register Register
+	// Register Register // why would registers need to get assigned to registers?
 	Variable VarAssemblyVar
-	Stack StackLocation
+	// Stack StackLocation // also, would would stack locations need to get assigned to registers?
+}
+
+// putting this here because of its dependence on this other silly function
+func VarImmToX86Arg(varImm *VarAssemblyImmediate, colorings map[Location]int) (*X86Arg, error) {
+	switch {
+	case varImm.Int != nil:
+		return &X86Arg{
+			X86Int: varImm.Int,
+		}, nil
+	case varImm.Var != nil: // this same type test is done twice here and in ImmToLoc which is silly
+		loc, err := ImmToLoc(varImm)
+		if err != nil {
+			return nil, err
+		}
+		assignment, present := colorings[*loc]
+		if !present {
+			// return nil, errors.New("I made a mistake and there is an unassigned location")
+			assignment = 0
+		}
+		return GetLocation(assignment), nil
+	case varImm.Register != nil:
+		return &X86Arg{
+			X86Reg: varImm.Register,
+		}, nil
+	default: // must be a register, but I haven't handled that yet
+		// return &X86Arg{
+		// 	X86Offset: nil,
+		// 	X86OffsetReg: nil,
+		// }, nil
+		return nil, errors.New("Unhandled VarAssemblyImmediate converting to X86Arg")
+	}
+}
+
+func ImmToLoc(imm *VarAssemblyImmediate) (*Location, error) {
+	switch {
+	case imm.Var != nil:
+		return &Location{Variable: *imm.Var}, nil
+	// case imm.Register != nil:
+	// 	return &Location{Register: *imm.Register}, nil
+	default:
+		return nil, errors.New("Unhandled case in VarAssemblyImmediate conversion to Location because of my silly mistakes")
+	}
 }
 
 func LocationToStr(l Location) string {
     switch {
-    case l.Register.Name != "":
-        return l.Register.Name
+    // case l.Register.Name != "":
+    //     return l.Register.Name
     case l.Variable.Generated != 0:
-        return "tmp" + fmt.Sprint(l.Variable.Generated)
+        return "tmp" + strconv.Itoa(l.Variable.Generated)
     default:
         return "I'll get to this later"
     }
 }
 
-// Live before instruction k = live after k - locations written by k, plus any locations read by k
+// Live before instruction k = live after k minus locations written by k, plus any locations read by k
 // the logic here is that any locations written are OVERwritten and so are no longer live
 // if a location is written to but never read, it will never be added to the set. the mere reference
 // to a location does not imply that it will be live.
@@ -109,11 +237,11 @@ func LocationsReadWritten(instr *VarAssemblyInstr) (map[Location]bool, map[Locat
 	locationsRead := make(map[Location]bool)
     locationsWritten := make(map[Location]bool)
     switch {
-    case instr.Addq != nil: 
+    case instr.Addq != nil:
         locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Addq[0]))
         locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Addq[1]))
         locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Addq[1]))
-    case instr.Movq != nil: 
+    case instr.Movq != nil:
         locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Movq[0]))
         locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Movq[1]))
     }
@@ -125,8 +253,8 @@ func LocationsReferenced(arg *VarAssemblyImmediate) map[Location]bool {
     switch {
     case arg.Var != nil:
         locations[Location{Variable: *arg.Var}] = true
-    case arg.Register != nil:
-        locations[Location{Register: *arg.Register}] = true
+    // case arg.Register != nil:
+    //     locations[Location{Register: *arg.Register}] = true
     }
     return locations
 }
