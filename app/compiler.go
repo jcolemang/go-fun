@@ -32,6 +32,7 @@ func Compile(prog *Program) (*X86Program, error) {
 	// (+ 1 (let ((x 2)) (let ((x 3)) x)))
 	// into
 	// (+ 1 (let ((x_1 2)) (let ((x_2 3)) x)))
+	// In other words, takes care of the lexical scoping logic
 	newProg, err := Uniquify(prog, getVar)
 	if err != nil {
 		return nil, err
@@ -46,6 +47,7 @@ func Compile(prog *Program) (*X86Program, error) {
 	// x_1 = 2
 	// tmp2 = (+ x_1 3)
 	// (+ 1 tmp2)
+	// could more appropriately be called "remove lets"
 	flatProg, err := Flatten(newProg)
 	if err != nil {
 		return nil, err
@@ -60,6 +62,7 @@ func Compile(prog *Program) (*X86Program, error) {
 	// tmp1 = (+ 3 4)
 	// tmp2 = (+ 2 tmp1)
 	// (+ 1 tmp2)
+	// In other works, squashes out subexpressions
 	simpleProg, err := RemoveComplexOperands(flatProg, getVar)
 	if err != nil {
 		return nil, err
@@ -69,6 +72,7 @@ func Compile(prog *Program) (*X86Program, error) {
 	fmt.Println(SimpleProgramToString(simpleProg))
 
 	// Add a final variable to later be used as an exit code or something
+	// honestly I don't think this is strictly necessary
 	simpleExitProg, err := AddExitVariable(simpleProg, getVar)
 	if err != nil {
 		return nil, err
@@ -92,5 +96,8 @@ func Compile(prog *Program) (*X86Program, error) {
 		return nil, err
 	}
 
-	return assembly, nil
+	// Removes some invalid and unnecessary instructions
+	patchedAssembly := PatchInstructions(assembly)
+
+	return patchedAssembly, nil
 }
