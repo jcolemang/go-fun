@@ -5,6 +5,11 @@ import (
 
 func PatchInstructions(prog *X86Program) *X86Program {
 	newInstrs := make([]*X86Instr, 0)
+	mainLabel := "main"
+	newInstrs = append(newInstrs, &X86Instr{
+		Label: &mainLabel,
+	})
+
 	for _, instrs := range prog.X86Instrs {
 		newInstrs = append(newInstrs, PatchInstruction(instrs)...)
 	}

@@ -25,5 +25,8 @@ func main() {
 		ctx.FatalIfErrorf(err)
 		fmt.Println("Final program")
 		fmt.Println(X86ProgramToString(prog))
+
+		err = CompileToFile(ast, "assembly.asm")
+		ctx.FatalIfErrorf(err)
 	}
 }

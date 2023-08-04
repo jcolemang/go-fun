@@ -2,25 +2,20 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/alecthomas/repr"
 )
 
-// step 1: Uniquify all variable names
-// (+ 1 (let ((x 2)) (+ x (let ((x 3)) x)))))))) ->
-// (+ 1 (let ((x_1 2)) (+ x_1 (let ((x_2 3)) x_2)))
-// This will be done by Uniquify
-// step 2: With unique variable names the lexical scoping rules of lets are no longer really useful
-//         and can be replaced with good ol' assignments. This also means that not everything
-//         will still need to be nested expressions
-// (+ 1 (let ((x_1 2)) (+ x_1 (let ((x_2 3)) x_2))) ->
-// x_1 := 2
-// x_2 := 3
-// (+ 1 (+ x_1 x_2))
-// step 3: Next comes removing the complex expressions as specified in the textbook, and continuing on from there.
 
-// Other possible passes:
-// expanding primitive mathematical expressions (+ 1 2 3) -> (+ 1 (+ 2 3)) to make arbitrary numbers of arguments possible
+func CompileToFile(prog *Program, location string) error {
+	x86, err := Compile(prog)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(location, []byte(X86ProgramToString(x86)), 0644)
+}
 
 func Compile(prog *Program) (*X86Program, error) {
 	fmt.Println("Initial program")
