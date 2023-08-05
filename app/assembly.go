@@ -2,113 +2,116 @@ package main
 
 import (
 	"strconv"
-    "github.com/alecthomas/participle/v2"
-	"github.com/alecthomas/participle/v2/lexer"
 )
 
-// X86 Language
+// Arm Language
 // the parsing is not really necessary and this would be slightly better without it because I could use arrays with specific lengths
 // which the parsing library does not allow
-type X86Program struct {
-	X86Directives []*X86Directive `@@*`
-    X86Instrs []*X86Instr         `@@*`
+type ArmProgram struct {
+	ArmDirectives []*ArmDirective
+    ArmInstrs []*ArmInstr
 }
 
-type X86Directive struct {
-	Name *string `( "."@Ident`
-	Arg *string  `  @Ident ) EOL`
+type ArmDirective struct {
+	Name string
+	Arg string
 }
 
-type X86Instr struct {
-	Label *string  `( @Ident":"`
-    Addq []*X86Arg `  | "addq" @@ "," @@`
-	Movq []*X86Arg `  | "movq" @@ "," @@`
-	Retq string    `  | @"retq" ) EOL`
+type ArmInstr struct {
+	Label *string
+    Add []*ArmArg
+	Mov []*ArmArg
+	Ret string
 }
 
-type X86Arg struct {
-    X86Int *int               `"$"@Int`
-    X86Reg *Register          `| @@`
-	X86Offset *int            `| @Int`
-	X86OffsetReg *Register    `"("@@")"`
+type ArmArg struct {
+    ArmInt *int
+    ArmReg *Register
+	ArmOffset *int
+	ArmOffsetReg *Register
 }
 
 type Register struct {
 	// argument passing: rdi rsi rdx rcx r8 r9
 	// caller saved: rax rcx rdx rsi rdi r8 r9 r10 r11 -> the caller needs to save these, the callee can use freely
 	// callee saved: rsp rbp rbx r12 r13 r14 r15 -> callee can use these, but must restore them, caller can use freely
-	Name string `"%"@Ident`
+	Name string
 }
 
-func X86ProgramToString(prog *X86Program) string {
+func ArmProgramToString(prog *ArmProgram) string {
 	s := ""
-	for _, dir := range prog.X86Directives {
-		s += X86DirectiveToString(dir) + "\n"
+	for _, dir := range prog.ArmDirectives {
+		s += "\t" + ArmDirectiveToString(dir) + "\n"
 	}
-	for _, instr := range prog.X86Instrs {
-		s += X86InstrToString(instr) + "\n"
+	for _, instr := range prog.ArmInstrs {
+		s += ArmInstrToString(instr) + "\n"
 	}
 	return s
 }
 
-func X86DirectiveToString(directive *X86Directive) string {
-	return *directive.Name + " " + *directive.Arg
+func ArmDirectiveToString(directive *ArmDirective) string {
+	return "." + directive.Name + " " + directive.Arg
 }
 
-func X86InstrToString(instr *X86Instr) string {
+func ArmInstrToString(instr *ArmInstr) string {
 	switch {
 	case instr.Label != nil:
 		return *instr.Label + ":"
-	case instr.Addq != nil:
-		return "\taddq " + X86ArgToString(instr.Addq[0]) + " " + X86ArgToString(instr.Addq[1])
-	case instr.Movq != nil:
-		return "\tmovq " + X86ArgToString(instr.Movq[0]) + " " + X86ArgToString(instr.Movq[1])
+	case instr.Add != nil:
+		return "\taddq " + ArmArgToString(instr.Addq[0]) + ", " + ArmArgToString(instr.Addq[1])
+	case instr.Mov != nil:
+		return "\tmovq " + ArmArgToString(instr.Movq[0]) + ", " + ArmArgToString(instr.Movq[1])
 	default:
 		return "Haven't implemented print for this one yet"
 	}
 }
 
-func X86ArgToString(arg *X86Arg) string {
+func ArmArgToString(arg *ArmArg) string {
 	switch {
-	case arg.X86Int != nil:
-		return strconv.Itoa(*arg.X86Int)
-	case arg.X86Reg != nil:
-		return "%" + arg.X86Reg.Name
+	case arg.ArmInt != nil:
+		return "$" + strconv.Itoa(*arg.ArmInt)
+	case arg.ArmReg != nil:
+		return "%" + arg.ArmReg.Name
 	default:
 		// must be a stack location
-		return strconv.Itoa(*arg.X86Offset) + "(%" + arg.X86OffsetReg.Name + ")"
+		return strconv.Itoa(*arg.ArmOffset) + "(%" + arg.ArmOffsetReg.Name + ")"
 	}
 }
 
-func GetLocation(i int) *X86Arg {
+func GetLocation(i int) *ArmArg {
 	assignableRegisters := []Register{
-		Register{Name: "rcx"},
-		Register{Name: "rdx"},
-		Register{Name: "rsi"},
-		Register{Name: "rdi"},
-		Register{Name: "r8"},
-		Register{Name: "r9"},
-		Register{Name: "r10"},
-		Register{Name: "rbx"},
-		Register{Name: "r12"},
-		Register{Name: "r13"},
-		Register{Name: "r14"},
+		Register{Name: "x9"}, // temporary registers
+		Register{Name: "x10"},
+		Register{Name: "x11"},
+		Register{Name: "x12"},
+		Register{Name: "x13"},
+		Register{Name: "x14"},
+		Register{Name: "x15"},
+		Register{Name: "x19"}, // callee saved
+		Register{Name: "x20"},
+		Register{Name: "x21"},
+		Register{Name: "x22"},
+		Register{Name: "x23"},
+		Register{Name: "x24"},
+		Register{Name: "x25"},
+		Register{Name: "x26"},
+		Register{Name: "x27"},
+		Register{Name: "x28"},
 	}
 
 	if i < len(assignableRegisters) {
-		return &X86Arg{X86Reg: &assignableRegisters[i]}
+		return &ArmArg{ArmReg: &assignableRegisters[i]}
 	} else {
 		offset := (i - len(assignableRegisters) + 1) * -8
-		return &X86Arg{
-			X86Offset: &offset,
-			X86OffsetReg: &Register{Name: "rbp"}, // base pointer
+		return &ArmArg{
+			ArmOffset: &offset,
+			ArmOffsetReg: &Register{Name: "sp"}, // base pointer
 		}
 	}
 }
 
-
-
 func GetArgumentRegisters() []*Register {
+    // 0 - 7
 	return []*Register{
 		&Register{Name: "rdi"},
 		&Register{Name: "rsi"},
@@ -120,6 +123,7 @@ func GetArgumentRegisters() []*Register {
 }
 
 func GetCalleeClobbered() []*Register {
+    // 0 - 7 (inclusive)
 	return []*Register{
 		&Register{Name: "rax"},
 		&Register{Name: "rcx"},
@@ -134,6 +138,7 @@ func GetCalleeClobbered() []*Register {
 }
 
 func GetCalleeSaved() []*Register {
+    // 19 - 28 (inclusive)
 	return []*Register{
 		&Register{Name: "rsp"},
 		&Register{Name: "rbp"},
@@ -143,22 +148,4 @@ func GetCalleeSaved() []*Register {
 		&Register{Name: "r14"},
 		&Register{Name: "r15"},
 	}
-}
-
-func GetX86Parser() *participle.Parser[X86Program] {
-	basicLexer := lexer.MustSimple([]lexer.SimpleRule{
-		{"Comment", `(?i)rem[^\n]*`},
-		{"String", `"(\\"|[^"])*"`},
-		{"Ident", `[a-zA-Z_]\w*`},
-		{"Int", `[-]?(\d+)`},
-		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
-		{"EOL", `[\n\r]+`},
-		{"whitespace", `[ \t]+`},
-	})
-
-	parser := participle.MustBuild[X86Program](
-		participle.Lexer(basicLexer),
-	)
-
-    return parser
 }

@@ -15,7 +15,7 @@ func PatchInstructions(prog *X86Program) *X86Program {
 	}
 
 	return &X86Program{
-		X86Directives: prog.X86Directives,
+        X86Directives: append(prog.X86Directives, &X86Directive{Name: "globl", Arg: "main"}),
 		X86Instrs: newInstrs,
 	}
 }

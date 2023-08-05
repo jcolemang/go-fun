@@ -6,60 +6,60 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func AssignRegisters(prog *VarAssemblyProgram) (*X86Program, error) {
+func AssignRegisters(prog *VarAssemblyProgram) (*ArmProgram, error) {
     liveAfterSets := UncoverLive(prog.Instrs)
 	interferenceGraph := BuildInterferenceGraph(liveAfterSets)
 	colorings := ColorGraph(interferenceGraph)
 
-	newInstrs := make([]*X86Instr, len(prog.Instrs))
+	newInstrs := make([]*ArmInstr, len(prog.Instrs))
 	for i, instr := range prog.Instrs {
 		switch {
-		case instr.Addq != nil:
-			first, second := instr.Addq[0], instr.Addq[1]
-			firstX86, err := VarImmToX86Arg(first, colorings)
+		case instr.Add != nil:
+			first, second := instr.Add[0], instr.Add[1]
+			firstArm, err := VarImmToArmArg(first, colorings)
 			if err != nil {
 				return nil, err
 			}
-			secondX86, err := VarImmToX86Arg(second, colorings)
+			secondArm, err := VarImmToArmArg(second, colorings)
 			if err != nil {
 				return nil, err
 			}
-			newInstrs[i] = &X86Instr{
-				Addq: []*X86Arg{
-					firstX86,
-					secondX86,
+			newInstrs[i] = &ArmInstr{
+				Add: []*ArmArg{
+					firstArm,
+					secondArm,
 				},
 			}
-		case instr.Movq != nil:
+		case instr.Mov != nil:
 			// fair amount of repeated code with above case. Thought maybe fallthrough could help fix it but I'm not sure
-			first, second := instr.Movq[0], instr.Movq[1]
-			firstX86, err := VarImmToX86Arg(first, colorings)
+			first, second := instr.Mov[0], instr.Mov[1]
+			firstArm, err := VarImmToArmArg(first, colorings)
 			if err != nil {
 				return nil, err
 			}
-			secondX86, err := VarImmToX86Arg(second, colorings)
+			secondArm, err := VarImmToArmArg(second, colorings)
 			if err != nil {
 				return nil, err
 			}
-			newInstrs[i] = &X86Instr{
-				Movq: []*X86Arg{
-					firstX86,
-					secondX86,
+			newInstrs[i] = &ArmInstr{
+				Mov: []*ArmArg{
+					firstArm,
+					secondArm,
 				},
 			}
 		}
 	}
 
-	return &X86Program{
-		X86Directives: []*X86Directive{},
-		X86Instrs: newInstrs,
+	return &ArmProgram{
+		ArmDirectives: []*ArmDirective{},
+		ArmInstrs: newInstrs,
 	}, nil
 }
 
 // Two locations interfere if in any instruction there is a write to one location while the other is live.
 // Any live location subject to a write would be overwritten and so could not be read in the future of the
-// program. The exception is in movq (see below). Also note that no location can interfere with itself.
-// Consider movq s d and the live location v
+// program. The exception is in Mov (see below). Also note that no location can interfere with itself.
+// Consider Mov s d and the live location v
 // if s = v, then v does not interfere with d because v and d contain the same value.
 // if d = v, then v does not interfere with d because v and d trivially contain the same value
 // (this second if is the same in the other instructions)
@@ -69,7 +69,7 @@ func BuildInterferenceGraph(liveAfterSets []*LiveAfterInstr) *Graph[Location] {
 		read, written := LocationsReadWritten(liveAfterSet.Instr)
 
 		switch {
-		case liveAfterSet.Instr.Movq != nil:
+		case liveAfterSet.Instr.Mov != nil:
 			// this is a weird block but there is guaranteed to be only one read and written location
 			// maybe a better way to pattern match or a better data structure?
 			for readLoc, _ := range(read) {
@@ -150,11 +150,11 @@ type Location struct {
 }
 
 // putting this here because of its dependence on this other silly function
-func VarImmToX86Arg(varImm *VarAssemblyImmediate, colorings map[Location]int) (*X86Arg, error) {
+func VarImmToArmArg(varImm *VarAssemblyImmediate, colorings map[Location]int) (*ArmArg, error) {
 	switch {
 	case varImm.Int != nil:
-		return &X86Arg{
-			X86Int: varImm.Int,
+		return &ArmArg{
+			ArmInt: varImm.Int,
 		}, nil
 	case varImm.Var != nil: // this same type test is done twice here and in ImmToLoc which is silly
 		loc, err := ImmToLoc(varImm)
@@ -168,15 +168,15 @@ func VarImmToX86Arg(varImm *VarAssemblyImmediate, colorings map[Location]int) (*
 		}
 		return GetLocation(assignment), nil
 	case varImm.Register != nil:
-		return &X86Arg{
-			X86Reg: varImm.Register,
+		return &ArmArg{
+			ArmReg: varImm.Register,
 		}, nil
 	default: // must be a register, but I haven't handled that yet
-		// return &X86Arg{
-		// 	X86Offset: nil,
-		// 	X86OffsetReg: nil,
+		// return &ArmArg{
+		// 	ArmOffset: nil,
+		// 	ArmOffsetReg: nil,
 		// }, nil
-		return nil, errors.New("Unhandled VarAssemblyImmediate converting to X86Arg")
+		return nil, errors.New("Unhandled VarAssemblyImmediate converting to ArmArg")
 	}
 }
 
@@ -237,13 +237,13 @@ func LocationsReadWritten(instr *VarAssemblyInstr) (map[Location]bool, map[Locat
 	locationsRead := make(map[Location]bool)
     locationsWritten := make(map[Location]bool)
     switch {
-    case instr.Addq != nil:
-        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Addq[0]))
-        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Addq[1]))
-        locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Addq[1]))
-    case instr.Movq != nil:
-        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Movq[0]))
-        locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Movq[1]))
+    case instr.Add != nil:
+        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Add[0]))
+        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Add[1]))
+        locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Add[1]))
+    case instr.Mov != nil:
+        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Mov[0]))
+        locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Mov[1]))
     }
     return locationsRead, locationsWritten
 }
