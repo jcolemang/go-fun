@@ -14,6 +14,5 @@ int64_t add_five(int64_t x) {
 }
 
 void print_int(int64_t x) {
-  printf("OOOOOh here I am!!");
-  printf("%" PRId64, x);
+  printf("%" PRId64 "\n", x);
 }

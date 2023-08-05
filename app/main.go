@@ -24,9 +24,9 @@ func main() {
 		prog, err := Compile(ast)
 		ctx.FatalIfErrorf(err)
 		fmt.Println("Final program")
-		fmt.Println(X86ProgramToString(prog))
+		fmt.Println(ArmProgramToString(prog))
 
-		err = CompileToFile(ast, "assembly.asm")
+		err = CompileToFile(ast, "assembly.s")
 		ctx.FatalIfErrorf(err)
 	}
 }

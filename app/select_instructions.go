@@ -62,9 +62,9 @@ func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAss
 				}
 				return []*VarAssemblyInstr{
 					&VarAssemblyInstr{
-						Movq: &[2]*VarAssemblyImmediate{
-							val,
+						Mov: &[2]*VarAssemblyImmediate{
 							&VarAssemblyImmediate{Var: target},
+							val,
 						},
 					},
 				}, nil
@@ -74,7 +74,7 @@ func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAss
 		case expr.Primitive.Var != nil:
 			return []*VarAssemblyInstr{
 				&VarAssemblyInstr{
-					Movq: &[2]*VarAssemblyImmediate{
+					Mov: &[2]*VarAssemblyImmediate{
 						&VarAssemblyImmediate{
 							Var: &VarAssemblyVar{
 								Generated: expr.Primitive.Var.Generated,
@@ -134,47 +134,15 @@ func HandlePrimitive(primitive string, operands []*SimplePrimitive, target *VarA
 			return nil, err
 		}
 
-		switch {
-		case first.Var != nil && first.Var.Generated == target.Generated:
-			return []*VarAssemblyInstr{
-				&VarAssemblyInstr{
-					Addq: &[2]*VarAssemblyImmediate{
-						secondImm,
-						firstImm,
-					},
-				},
-			}, nil
-		case second.Var != nil && second.Var.Generated == target.Generated:
-			return []*VarAssemblyInstr{
-				&VarAssemblyInstr{
-					Addq: &[2]*VarAssemblyImmediate{
-						firstImm,
-						secondImm,
-					},
-				},
-			}, nil
-		default:
-			return []*VarAssemblyInstr{
-				&VarAssemblyInstr{
-					Movq: &[2]*VarAssemblyImmediate{
-						firstImm,
-						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
-					},
-				},
-				&VarAssemblyInstr{
-					Addq: &[2]*VarAssemblyImmediate{
-						secondImm,
-						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
-					},
-				},
-				&VarAssemblyInstr{
-					Movq: &[2]*VarAssemblyImmediate{
-						&VarAssemblyImmediate{Register: &Register{Name: "rax"}},
-						&VarAssemblyImmediate{Var: target},
-					},
-				},
-			}, nil
-		}
+        return []*VarAssemblyInstr{
+            &VarAssemblyInstr{
+                Add: &[3]*VarAssemblyImmediate{
+                    &VarAssemblyImmediate{Var: target},
+                    firstImm,
+                    secondImm,
+                },
+            },
+        }, nil
 	case "print":
 		return nil, errors.New("Need to define print")
 	case "read":

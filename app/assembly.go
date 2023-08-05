@@ -31,11 +31,21 @@ type ArmArg struct {
 	ArmOffsetReg *Register
 }
 
+func IsRegister(arg ArmArg) bool {
+    return arg.ArmReg != nil
+}
+
 type Register struct {
 	// argument passing: rdi rsi rdx rcx r8 r9
 	// caller saved: rax rcx rdx rsi rdi r8 r9 r10 r11 -> the caller needs to save these, the callee can use freely
 	// callee saved: rsp rbp rbx r12 r13 r14 r15 -> callee can use these, but must restore them, caller can use freely
 	Name string
+}
+
+func TempReg() *Register {
+    return &Register{
+        Name: "x0",
+    }
 }
 
 func ArmProgramToString(prog *ArmProgram) string {
@@ -58,9 +68,9 @@ func ArmInstrToString(instr *ArmInstr) string {
 	case instr.Label != nil:
 		return *instr.Label + ":"
 	case instr.Add != nil:
-		return "\taddq " + ArmArgToString(instr.Addq[0]) + ", " + ArmArgToString(instr.Addq[1])
+		return "\tadd " + ArmArgToString(instr.Add[0]) + ", " + ArmArgToString(instr.Add[1]) + ", " + ArmArgToString(instr.Add[2])
 	case instr.Mov != nil:
-		return "\tmovq " + ArmArgToString(instr.Movq[0]) + ", " + ArmArgToString(instr.Movq[1])
+		return "\tmov " + ArmArgToString(instr.Mov[0]) + ", " + ArmArgToString(instr.Mov[1])
 	default:
 		return "Haven't implemented print for this one yet"
 	}
@@ -69,9 +79,9 @@ func ArmInstrToString(instr *ArmInstr) string {
 func ArmArgToString(arg *ArmArg) string {
 	switch {
 	case arg.ArmInt != nil:
-		return "$" + strconv.Itoa(*arg.ArmInt)
+		return "#" + strconv.Itoa(*arg.ArmInt)
 	case arg.ArmReg != nil:
-		return "%" + arg.ArmReg.Name
+		return arg.ArmReg.Name
 	default:
 		// must be a stack location
 		return strconv.Itoa(*arg.ArmOffset) + "(%" + arg.ArmOffsetReg.Name + ")"

@@ -54,8 +54,8 @@ _print_int:                             ; @print_int
 	ldr	x8, [sp, #8]
 	mov	x9, sp
 	str	x8, [x9]
-	adrp	x0, l_.str@PAGE
-	add	x0, x0, l_.str@PAGEOFF
+	adrp	x0, l_.str.1@PAGE
+	add	x0, x0, l_.str.1@PAGEOFF
 	bl	_printf
 	ldp	x29, x30, [sp, #16]             ; 16-byte Folded Reload
 	add	sp, sp, #32
@@ -65,5 +65,8 @@ _print_int:                             ; @print_int
 	.section	__TEXT,__cstring,cstring_literals
 l_.str:                                 ; @.str
 	.asciz	"%lld"
+
+l_.str.1:                               ; @.str.1
+	.asciz	"%lld\n"
 
 .subsections_via_symbols

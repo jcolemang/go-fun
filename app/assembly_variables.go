@@ -9,8 +9,9 @@ type VarAssemblyProgram struct {
 }
 
 type VarAssemblyInstr struct {
-	Addq *[2]*VarAssemblyImmediate // val dest
-	Movq *[2]*VarAssemblyImmediate // val dest
+	Add *[3]*VarAssemblyImmediate
+	Mov *[2]*VarAssemblyImmediate
+    Ret *VarAssemblyImmediate
 }
 
 type VarAssemblyImmediate struct {
@@ -33,11 +34,11 @@ func VarAssemblyProgramToString(prog *VarAssemblyProgram) string {
 
 func VarAssemblyInstrToString(instr *VarAssemblyInstr) string {
     switch {
-    case instr.Addq != nil:
-        first, second := instr.Addq[0], instr.Addq[1]
+    case instr.Add != nil:
+        first, second := instr.Add[0], instr.Add[1]
         return "addq " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second)
-    case instr.Movq != nil:
-        first, second := instr.Movq[0], instr.Movq[1]
+    case instr.Mov != nil:
+        first, second := instr.Mov[0], instr.Mov[1]
         return "movq " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second)
     default:
         return "Unrecognized thing and I don't wanna deal"

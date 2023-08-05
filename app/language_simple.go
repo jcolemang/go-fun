@@ -14,6 +14,7 @@ type SimpleProgram struct {
 type SimpleStatement struct {
 	Expr *SimpleExpr
 	Assignment *SimpleAssignment
+    Return *SimpleExpr
 }
 
 type SimpleExpr struct {

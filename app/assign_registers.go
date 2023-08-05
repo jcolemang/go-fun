@@ -15,7 +15,7 @@ func AssignRegisters(prog *VarAssemblyProgram) (*ArmProgram, error) {
 	for i, instr := range prog.Instrs {
 		switch {
 		case instr.Add != nil:
-			first, second := instr.Add[0], instr.Add[1]
+			first, second, third := instr.Add[0], instr.Add[1], instr.Add[2]
 			firstArm, err := VarImmToArmArg(first, colorings)
 			if err != nil {
 				return nil, err
@@ -24,10 +24,15 @@ func AssignRegisters(prog *VarAssemblyProgram) (*ArmProgram, error) {
 			if err != nil {
 				return nil, err
 			}
+			thirdArm, err := VarImmToArmArg(third, colorings)
+			if err != nil {
+				return nil, err
+			}
 			newInstrs[i] = &ArmInstr{
 				Add: []*ArmArg{
 					firstArm,
 					secondArm,
+                    thirdArm,
 				},
 			}
 		case instr.Mov != nil:
@@ -238,12 +243,12 @@ func LocationsReadWritten(instr *VarAssemblyInstr) (map[Location]bool, map[Locat
     locationsWritten := make(map[Location]bool)
     switch {
     case instr.Add != nil:
-        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Add[0]))
         locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Add[1]))
-        locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Add[1]))
+        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Add[2]))
+        locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Add[0]))
     case instr.Mov != nil:
-        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Mov[0]))
-        locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Mov[1]))
+        locationsRead = MergeMaps(locationsRead, LocationsReferenced(instr.Mov[1]))
+        locationsWritten = MergeMaps(locationsWritten, LocationsReferenced(instr.Mov[0]))
     }
     return locationsRead, locationsWritten
 }

@@ -12,7 +12,12 @@
 // Setup the parameters to print hello world
 // and then call the Kernel to do it.
 _start:
-    mov X0, #10
-    b _add_five
-    b _print_int
+	stp	x29, LR, [sp, #-16]!
+
+    bl _read_int
+    bl _add_five
+    bl _print_int
+
+	ldp	x29, LR, [sp], #16
+    mov X0, 0
     ret

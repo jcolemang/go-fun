@@ -9,15 +9,15 @@ import (
 
 
 func CompileToFile(prog *Program, location string) error {
-	x86, err := Compile(prog)
+	Arm, err := Compile(prog)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(location, []byte(X86ProgramToString(x86)), 0644)
+	return os.WriteFile(location, []byte(ArmProgramToString(Arm)), 0644)
 }
 
-func Compile(prog *Program) (*X86Program, error) {
+func Compile(prog *Program) (*ArmProgram, error) {
 	fmt.Println("Initial program")
 	repr.Println(prog)
 
@@ -76,7 +76,7 @@ func Compile(prog *Program) (*X86Program, error) {
 	fmt.Println("Program after AddExitVariable")
 	fmt.Println(SimpleExitProgramToString(simpleExitProg))
 
-	// Picks X86 instructions but keeps variables around
+	// Picks Arm instructions but keeps variables around
 	varAssemblyProg, err := SelectInstructions(simpleExitProg)
 	if err != nil {
 		return nil, err
