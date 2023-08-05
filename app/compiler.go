@@ -8,8 +8,8 @@ import (
 )
 
 
-func CompileToFile(prog *Program, location string) error {
-	Arm, err := Compile(prog)
+func CompileToFile(prog *Program, location string, debug bool) error {
+	Arm, err := Compile(prog, debug)
 	if err != nil {
 		return err
 	}
@@ -17,9 +17,11 @@ func CompileToFile(prog *Program, location string) error {
 	return os.WriteFile(location, []byte(ArmProgramToString(Arm)), 0644)
 }
 
-func Compile(prog *Program) (*ArmProgram, error) {
-	fmt.Println("Initial program")
-	repr.Println(prog)
+func Compile(prog *Program, debug bool) (*ArmProgram, error) {
+    if debug {
+        fmt.Println("Initial program")
+        repr.Println(prog)
+    }
 
 	getVar := GetVarGenerator()
 
@@ -33,8 +35,10 @@ func Compile(prog *Program) (*ArmProgram, error) {
 		return nil, err
 	}
 
-	fmt.Println("Program after Uniquify")
-	repr.Println(newProg)
+    if debug {
+        fmt.Println("Program after Uniquify")
+        repr.Println(newProg)
+    }
 
 	// turning
 	// (+ 1 (let ((x_1 2)) (+ x_1 3)))
@@ -48,8 +52,10 @@ func Compile(prog *Program) (*ArmProgram, error) {
 		return nil, err
 	}
 
-	fmt.Println("Program after Flatten")
-	fmt.Println(FlatProgramToString(flatProg))
+    if debug {
+        fmt.Println("Program after Flatten")
+        fmt.Println(FlatProgramToString(flatProg))
+    }
 
 	// turning
 	// (+ 1 (+ 2 (+ 3 4)))
@@ -63,36 +69,40 @@ func Compile(prog *Program) (*ArmProgram, error) {
 		return nil, err
 	}
 
-	fmt.Println("Program after RemoveComplexOperands")
-	fmt.Println(SimpleProgramToString(simpleProg))
-
-	// Add a final variable to later be used as an exit code or something
-	// honestly I don't think this is strictly necessary
-	simpleExitProg, err := AddExitVariable(simpleProg, getVar)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("Program after AddExitVariable")
-	fmt.Println(SimpleExitProgramToString(simpleExitProg))
+    if debug {
+        fmt.Println("Program after RemoveComplexOperands")
+        fmt.Println(SimpleProgramToString(simpleProg))
+    }
 
 	// Picks Arm instructions but keeps variables around
-	varAssemblyProg, err := SelectInstructions(simpleExitProg)
+	varAssemblyProg, err := SelectInstructions(simpleProg, getVar)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("Program after SelectInstructions")
-	fmt.Println(VarAssemblyProgramToString(varAssemblyProg))
+    if debug {
+        fmt.Println("Program after SelectInstructions")
+        fmt.Println(VarAssemblyProgramToString(varAssemblyProg))
+    }
 
 	// Assigns variables to registers
-	assembly, err := AssignRegisters(varAssemblyProg)
+	assembly, err := AssignRegisters(varAssemblyProg, debug)
 	if err != nil {
 		return nil, err
 	}
+
+    if debug {
+        fmt.Println("Program after AssignRegisters")
+        fmt.Println(ArmProgramToString(assembly))
+    }
 
 	// Removes some invalid and unnecessary instructions
 	patchedAssembly := PatchInstructions(assembly)
+
+    if debug {
+        fmt.Println("Program after PatchInstructions")
+        fmt.Println(ArmProgramToString(assembly))
+    }
 
 	return patchedAssembly, nil
 }

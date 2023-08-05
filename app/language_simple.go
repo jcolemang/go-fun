@@ -51,6 +51,8 @@ func SimpleStatementToString(statement *SimpleStatement) string {
 		return SimpleExprToString(statement.Expr)
 	case statement.Assignment != nil:
 		return VarToString(statement.Assignment.Ref) + " = " + SimpleExprToString(statement.Assignment.Expr)
+	case statement.Return != nil:
+		return "return " + SimpleExprToString(statement.Return)
 	default:
 		return "Got a nonsense statement and I don't want to deal with the error"
 	}

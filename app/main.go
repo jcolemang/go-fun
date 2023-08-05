@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"fmt"
 
 	"github.com/alecthomas/kong"
 )
@@ -21,12 +20,9 @@ func main() {
 		ast, err := parser.Parse(file, r)
 		r.Close()
 		ctx.FatalIfErrorf(err)
-		prog, err := Compile(ast)
-		ctx.FatalIfErrorf(err)
-		fmt.Println("Final program")
-		fmt.Println(ArmProgramToString(prog))
 
-		err = CompileToFile(ast, "assembly.s")
+        debug := false
+		err = CompileToFile(ast, "assembly.s", debug)
 		ctx.FatalIfErrorf(err)
 	}
 }

@@ -11,7 +11,7 @@ type VarAssemblyProgram struct {
 type VarAssemblyInstr struct {
 	Add *[3]*VarAssemblyImmediate
 	Mov *[2]*VarAssemblyImmediate
-    Ret *VarAssemblyImmediate
+    Ret *Ret // does not matter
 }
 
 type VarAssemblyImmediate struct {
@@ -35,11 +35,13 @@ func VarAssemblyProgramToString(prog *VarAssemblyProgram) string {
 func VarAssemblyInstrToString(instr *VarAssemblyInstr) string {
     switch {
     case instr.Add != nil:
-        first, second := instr.Add[0], instr.Add[1]
-        return "addq " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second)
+        first, second, third := instr.Add[0], instr.Add[1], instr.Add[2]
+        return "add " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second) + " " + VarAssemblyImmediateToString(third)
     case instr.Mov != nil:
         first, second := instr.Mov[0], instr.Mov[1]
-        return "movq " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second)
+        return "mov " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second)
+    case instr.Ret != nil:
+        return "ret"
     default:
         return "Unrecognized thing and I don't wanna deal"
     }
@@ -50,9 +52,9 @@ func VarAssemblyImmediateToString(imm *VarAssemblyImmediate) string {
         case imm.Var != nil:
             return "tmp" + fmt.Sprint(imm.Var.Generated)
         case imm.Int != nil:
-            return "$" + fmt.Sprint(*imm.Int)
+            return "#" + fmt.Sprint(*imm.Int)
         case imm.Register != nil:
-            return "%" + imm.Register.Name
+            return imm.Register.Name
     }
     return "Another unrecognized thing"
 }

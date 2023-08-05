@@ -10,8 +10,8 @@ func PatchInstructions(prog *ArmProgram) *ArmProgram {
 		Label: &mainLabel,
 	})
 
-	for _, instrs := range prog.ArmInstrs {
-		newInstrs = append(newInstrs, PatchInstruction(instrs)...)
+	for _, instr := range prog.ArmInstrs {
+		newInstrs = append(newInstrs, PatchInstruction(instr)...)
 	}
 
 	return &ArmProgram{

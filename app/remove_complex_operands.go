@@ -27,7 +27,6 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 	switch {
 	case statement.Expr != nil:
 		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Expr, false, getVar)
-		// newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Expr, getVar)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -38,7 +37,6 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 		return newStatements, nil, nil
 	case statement.Assignment != nil:
 		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Assignment.Expr, true, getVar)
-		// newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Assignment.Expr, getVar)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -47,6 +45,16 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 		}
 		newStatements = append(newStatements, &SimpleStatement{Assignment: &SimpleAssignment{Ref: statement.Assignment.Ref, Expr: newExpr}})
 
+		return newStatements, nil, nil
+    case statement.Return != nil:
+		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Return, false, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, a := range(newAssigns) {
+			newStatements = append(newStatements, &SimpleStatement{Assignment: a})
+		}
+		newStatements = append(newStatements, &SimpleStatement{Return: newExpr})
 		return newStatements, nil, nil
 	default:
 		return nil, nil, errors.New("Unrecognized statement")

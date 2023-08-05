@@ -21,8 +21,10 @@ type ArmInstr struct {
 	Label *string
     Add []*ArmArg
 	Mov []*ArmArg
-	Ret string
+	Ret *Ret
 }
+
+type Ret struct {}
 
 type ArmArg struct {
     ArmInt *int
@@ -43,6 +45,12 @@ type Register struct {
 }
 
 func TempReg() *Register {
+    return &Register{
+        Name: "x0",
+    }
+}
+
+func ReturnReg() *Register {
     return &Register{
         Name: "x0",
     }
@@ -71,6 +79,8 @@ func ArmInstrToString(instr *ArmInstr) string {
 		return "\tadd " + ArmArgToString(instr.Add[0]) + ", " + ArmArgToString(instr.Add[1]) + ", " + ArmArgToString(instr.Add[2])
 	case instr.Mov != nil:
 		return "\tmov " + ArmArgToString(instr.Mov[0]) + ", " + ArmArgToString(instr.Mov[1])
+	case instr.Ret != nil:
+		return "\tret"
 	default:
 		return "Haven't implemented print for this one yet"
 	}
@@ -79,7 +89,8 @@ func ArmInstrToString(instr *ArmInstr) string {
 func ArmArgToString(arg *ArmArg) string {
 	switch {
 	case arg.ArmInt != nil:
-		return "#" + strconv.Itoa(*arg.ArmInt)
+		//return "#" + strconv.Itoa(*arg.ArmInt)
+		return strconv.Itoa(*arg.ArmInt)
 	case arg.ArmReg != nil:
 		return arg.ArmReg.Name
 	default:

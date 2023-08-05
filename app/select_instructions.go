@@ -4,10 +4,10 @@ import (
 	"errors"
 )
 
-func SelectInstructions(prog *SimpleExitProgram) (*VarAssemblyProgram, error) {
+func SelectInstructions(prog *SimpleProgram, getVar func() *Var) (*VarAssemblyProgram, error) {
 	var instrs []*VarAssemblyInstr
 	for _, s := range(prog.Statements) {
-		stmtInstrs, err := SelectInstructionsStmt(s)
+		stmtInstrs, err := SelectInstructionsStmt(s, getVar)
 		if err != nil {
 			return nil, err
 		}
@@ -16,7 +16,7 @@ func SelectInstructions(prog *SimpleExitProgram) (*VarAssemblyProgram, error) {
 	return &VarAssemblyProgram{Instrs: instrs}, nil
 }
 
-func SelectInstructionsStmt(stmt *SimpleStatement) ([]*VarAssemblyInstr, error) {
+func SelectInstructionsStmt(stmt *SimpleStatement, getVar func() *Var) ([]*VarAssemblyInstr, error) {
 	switch {
 	case stmt.Expr != nil:
 		// truly nothing to do with just the naked immediate here
@@ -38,6 +38,30 @@ func SelectInstructionsStmt(stmt *SimpleStatement) ([]*VarAssemblyInstr, error) 
 		}
 
 		return instrs, nil
+	case stmt.Return != nil:
+		targetVar := &VarAssemblyVar{
+			Generated: getVar().Generated,
+		}
+		instrs, err := SelectInstructionsExpr(stmt.Return, targetVar)
+		if err != nil {
+			return nil, err
+		}
+        finalInstrs := []*VarAssemblyInstr{
+            &VarAssemblyInstr{
+                Mov: &[2]*VarAssemblyImmediate{
+                    &VarAssemblyImmediate{
+                        Register: ReturnReg(),
+                    },
+                    &VarAssemblyImmediate{
+                        Var: targetVar,
+                    },
+                },
+            },
+            &VarAssemblyInstr{
+                Ret: &Ret{},
+            },
+        }
+		return append(instrs, finalInstrs...), nil
 	default:
 		return nil, errors.New("Unrecognized SimpleStatement")
 	}

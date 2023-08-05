@@ -14,7 +14,7 @@ func Flatten(progOrig *Program) (*FlatProgram, error) {
 	for _, a := range(assigns) {
 		newStatements = append(newStatements, &FlatStatement{Assignment: a})
 	}
-	newStatements = append(newStatements, &FlatStatement{Expr: flatExpr})
+	newStatements = append(newStatements, &FlatStatement{Return: flatExpr})
 
 	return &FlatProgram{
 		Statements: newStatements,

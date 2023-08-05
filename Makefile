@@ -1,5 +1,9 @@
+
+PROG ?= ./test-files/prog1
+
 program: runtime.o assembly.o
 	ld -o program assembly.o runtime.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64
+	chmod +x program
 
 assembly.o: assembly.s
 	as -arch arm64 -o assembly.o assembly.s

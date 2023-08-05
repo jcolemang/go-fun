@@ -12,6 +12,7 @@ type FlatProgram struct {
 type FlatStatement struct {
 	Expr *FlatExpr
 	Assignment *FlatAssignment
+    Return *FlatExpr
 }
 
 type FlatExpr struct {
@@ -39,6 +40,8 @@ func FlatStatementToString(statement *FlatStatement) string {
 		return FlatExprToString(statement.Expr)
 	case statement.Assignment != nil:
 		return VarToString(statement.Assignment.Ref) + " = " + FlatExprToString(statement.Assignment.Expr)
+	case statement.Return != nil:
+		return "return " + FlatExprToString(statement.Return)
 	default:
 		return "Got a nonsense statement and I don't want to deal with the error"
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "container/heap" // this would probably make sense to use for the color saturation but I can't be bothered at this moment
 )
 
 // mutation is for suckers
@@ -116,7 +115,7 @@ func GetMinimalColor(adjacentColors []int, availableColors []int) (int, []int) {
 			return available, availableColors
 		}
 	}
-	newColor := availableColors[len(availableColors) - 1]
+	newColor := availableColors[len(availableColors) - 1] + 1
 	return newColor, append(availableColors, newColor)
 }
 

@@ -3,13 +3,21 @@ package main
 import (
 	"errors"
 	"strconv"
+    "fmt"
+    "github.com/alecthomas/repr"
 	"golang.org/x/exp/slices"
 )
 
-func AssignRegisters(prog *VarAssemblyProgram) (*ArmProgram, error) {
+func AssignRegisters(prog *VarAssemblyProgram, debug bool) (*ArmProgram, error) {
     liveAfterSets := UncoverLive(prog.Instrs)
 	interferenceGraph := BuildInterferenceGraph(liveAfterSets)
 	colorings := ColorGraph(interferenceGraph)
+
+    if debug {
+        repr.Println(interferenceGraph)
+        repr.Println(colorings)
+        fmt.Println(LiveAfterSetsToString(liveAfterSets))
+    }
 
 	newInstrs := make([]*ArmInstr, len(prog.Instrs))
 	for i, instr := range prog.Instrs {
@@ -52,7 +60,12 @@ func AssignRegisters(prog *VarAssemblyProgram) (*ArmProgram, error) {
 					secondArm,
 				},
 			}
+        case instr.Ret != nil:
+			newInstrs[i] = &ArmInstr{
+				Ret: &Ret{},
+            }
 		}
+
 	}
 
 	return &ArmProgram{
@@ -107,7 +120,7 @@ type LiveAfterInstr struct {
 	LiveAfter map[Location]bool
 }
 
-func LiveBeforeSetsToString(instrs []*LiveAfterInstr) string {
+func LiveAfterSetsToString(instrs []*LiveAfterInstr) string {
     repr := ""
     for _, i := range(instrs) {
         instrStr := VarAssemblyInstrToString(i.Instr)
