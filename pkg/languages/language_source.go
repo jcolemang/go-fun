@@ -5,20 +5,28 @@ import (
 
     "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+
+	"github.com/alecthomas/repr"
 )
 
 // Main Language
 // This is the source language that this compiler is targeted for
+
+type Empty struct {}
 
 type Program struct {
 	Expr *Expr `@@`
 }
 
 type Expr struct {
-	Num *Num     `@@`
-    Var *Var     `| @@`
-	Let *LetExpr `| @@`
-    App []*Expr  `| "(" @@ @@* ")" `
+	Bool *Bool    `@@`
+	Num *Num      `| @@`
+    Var *Var      `| @@`
+	Let *LetExpr  `| @@`
+    App []*Expr   `| "(" @@ @@* ")" `
+    IfCond *Expr  `| "(" "if" @@`
+    IfTrue *Expr  `  @@`
+    IfFalse *Expr `  @@ ")"`
 }
 
 type LetExpr struct {
@@ -34,6 +42,11 @@ type Assignment struct {
 // have this separated to also handle floats
 type Num struct {
 	Int *int `@Int`
+}
+
+type Bool struct {
+	True *Empty  `"#True"`
+	False *Empty `| "#False"`
 }
 
 type Var struct {
@@ -69,11 +82,16 @@ func GetVarGenerator() func() *Var {
     return generator
 }
 
+func ProgToString(prog *Program) string {
+    return repr.String(prog)
+}
+
 func GetLanguageParser() *participle.Parser[Program] {
 	basicLexer := lexer.MustSimple([]lexer.SimpleRule{
-		{"Comment", `(?i)rem[^\n]*`},
 		{"String", `"(\\"|[^"])*"`},
-		{"Ident", `[a-zA-Z_\-+]\w*`},
+		{"Ident", `[a-zA-Z_\-+#]\w*`}, // note that allowing # allows variables to attempt but fail to shadow bools.
+                                       // could maybe fancy this up with some kind of stateful parsing but for now
+                                       // I just simply don't care
 		{"Int", `[-]?(\d+)`},
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
 		{"whitespace", `[ \t\n\r]+`},

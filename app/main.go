@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+    "fmt"
     "language/pkg/languages"
 
 	"github.com/alecthomas/kong"
@@ -9,21 +10,22 @@ import (
 
 // Code to actually run
 var cli struct {
-	Files []string `arg:"" optional:"" type:"existingfile" help:"GraphQL schema files to parse."`
+	InputFile string `arg:"" optional:"" type:"existingfile" help:"GraphQL schema files to parse."`
+	OutputFile string `arg:"" optional:"" type:"newfile" help:"GraphQL schema files to parse."`
 }
 
 func main() {
     parser := languages.GetLanguageParser()
 	ctx := kong.Parse(&cli)
-	for _, file := range cli.Files {
-		r, err := os.Open(file)
-		ctx.FatalIfErrorf(err)
-		ast, err := parser.Parse(file, r)
-		r.Close()
-		ctx.FatalIfErrorf(err)
+    file, result := cli.InputFile, cli.OutputFile
+    r, err := os.Open(file)
+    ctx.FatalIfErrorf(err)
+    ast, err := parser.Parse(file, r)
+    r.Close()
+    ctx.FatalIfErrorf(err)
+    fmt.Println(languages.ProgToString(ast))
 
-        debug := false
-		err = CompileToFile(ast, "assembly.s", debug)
-		ctx.FatalIfErrorf(err)
-	}
+    debug := true
+    err = CompileToFile(ast, result, debug)
+    ctx.FatalIfErrorf(err)
 }

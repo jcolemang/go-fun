@@ -16,3 +16,6 @@ runtime.o: runtime.c runtime.h
 
 clean:
 	rm -f program assembly.o runtime.o assembly.s
+	rm -f ./test-files/*.s
+	rm -f ./test-files/*.o
+	rm -f ./test-files/*.prog
