@@ -2,10 +2,11 @@ package main
 
 import (
 	"errors"
+    "language/pkg/languages"
 )
 
-func SelectInstructions(prog *SimpleProgram, getVar func() *Var) (*VarAssemblyProgram, error) {
-	var instrs []*VarAssemblyInstr
+func SelectInstructions(prog *languages.SimpleProgram, getVar func() *languages.Var) (*languages.VarAssemblyProgram, error) {
+	var instrs []*languages.VarAssemblyInstr
 	for _, s := range(prog.Statements) {
 		stmtInstrs, err := SelectInstructionsStmt(s, getVar)
 		if err != nil {
@@ -13,10 +14,10 @@ func SelectInstructions(prog *SimpleProgram, getVar func() *Var) (*VarAssemblyPr
 		}
 		instrs = append(instrs, stmtInstrs...)
 	}
-	return &VarAssemblyProgram{Instrs: instrs}, nil
+	return &languages.VarAssemblyProgram{Instrs: instrs}, nil
 }
 
-func SelectInstructionsStmt(stmt *SimpleStatement, getVar func() *Var) ([]*VarAssemblyInstr, error) {
+func SelectInstructionsStmt(stmt *languages.SimpleStatement, getVar func() *languages.Var) ([]*languages.VarAssemblyInstr, error) {
 	switch {
 	case stmt.Expr != nil:
 		// truly nothing to do with just the naked immediate here
@@ -29,7 +30,7 @@ func SelectInstructionsStmt(stmt *SimpleStatement, getVar func() *Var) ([]*VarAs
 		if stmt.Assignment.Ref.Generated == 0 {
 			return nil, errors.New("I've made a mistake in variable generation")
 		}
-		targetVar := &VarAssemblyVar{
+		targetVar := &languages.VarAssemblyVar{
 			Generated: stmt.Assignment.Ref.Generated,
 		}
 		instrs, err := SelectInstructionsExpr(stmt.Assignment.Expr, targetVar)
@@ -39,26 +40,26 @@ func SelectInstructionsStmt(stmt *SimpleStatement, getVar func() *Var) ([]*VarAs
 
 		return instrs, nil
 	case stmt.Return != nil:
-		targetVar := &VarAssemblyVar{
+		targetVar := &languages.VarAssemblyVar{
 			Generated: getVar().Generated,
 		}
 		instrs, err := SelectInstructionsExpr(stmt.Return, targetVar)
 		if err != nil {
 			return nil, err
 		}
-        finalInstrs := []*VarAssemblyInstr{
-            &VarAssemblyInstr{
-                Mov: &[2]*VarAssemblyImmediate{
-                    &VarAssemblyImmediate{
-                        Register: ReturnReg(),
+        finalInstrs := []*languages.VarAssemblyInstr{
+            &languages.VarAssemblyInstr{
+                Mov: &[2]*languages.VarAssemblyImmediate{
+                    &languages.VarAssemblyImmediate{
+                        Register: languages.ReturnReg(),
                     },
-                    &VarAssemblyImmediate{
+                    &languages.VarAssemblyImmediate{
                         Var: targetVar,
                     },
                 },
             },
-            &VarAssemblyInstr{
-                Ret: &Ret{},
+            &languages.VarAssemblyInstr{
+                Ret: &languages.Ret{},
             },
         }
 		return append(instrs, finalInstrs...), nil
@@ -70,41 +71,41 @@ func SelectInstructionsStmt(stmt *SimpleStatement, getVar func() *Var) ([]*VarAs
 // without passing the variable through I think this would need to be able to generate a new
 // variable to hold the value of the expression but that would I think just add a lot of extra
 // unnecessary variables
-func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAssemblyInstr, error) {
+func SelectInstructionsExpr(expr *languages.SimpleExpr, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
 	switch {
 	case expr.Primitive != nil:
 		switch {
 		case expr.Primitive.Num != nil:
 			if target != nil {
-				var val *VarAssemblyImmediate
+				var val *languages.VarAssemblyImmediate
 				if expr.Primitive.Num.Int != nil {
-					val = &VarAssemblyImmediate{
+					val = &languages.VarAssemblyImmediate{
 						Int: expr.Primitive.Num.Int,
 					}
 				} else {
 					return nil, errors.New("Unrecognized number type")
 				}
-				return []*VarAssemblyInstr{
-					&VarAssemblyInstr{
-						Mov: &[2]*VarAssemblyImmediate{
-							&VarAssemblyImmediate{Var: target},
+				return []*languages.VarAssemblyInstr{
+					&languages.VarAssemblyInstr{
+						Mov: &[2]*languages.VarAssemblyImmediate{
+							&languages.VarAssemblyImmediate{Var: target},
 							val,
 						},
 					},
 				}, nil
 			} else {
-				return []*VarAssemblyInstr{}, nil
+				return []*languages.VarAssemblyInstr{}, nil
 			}
 		case expr.Primitive.Var != nil:
-			return []*VarAssemblyInstr{
-				&VarAssemblyInstr{
-					Mov: &[2]*VarAssemblyImmediate{
-						&VarAssemblyImmediate{
-							Var: &VarAssemblyVar{
+			return []*languages.VarAssemblyInstr{
+				&languages.VarAssemblyInstr{
+					Mov: &[2]*languages.VarAssemblyImmediate{
+						&languages.VarAssemblyImmediate{
+							Var: &languages.VarAssemblyVar{
 								Generated: expr.Primitive.Var.Generated,
 							},
 						},
-						&VarAssemblyImmediate{Var: target},
+						&languages.VarAssemblyImmediate{Var: target},
 					},
 				},
 			}, nil
@@ -131,18 +132,18 @@ func SelectInstructionsExpr(expr *SimpleExpr, target *VarAssemblyVar) ([]*VarAss
 	}
 }
 
-func PrimitiveToImmediate(primitive *SimplePrimitive) (*VarAssemblyImmediate, error) {
+func PrimitiveToImmediate(primitive *languages.SimplePrimitive) (*languages.VarAssemblyImmediate, error) {
 	switch {
 	case primitive.Num != nil && primitive.Num.Int != nil:
-		return &VarAssemblyImmediate{Int: primitive.Num.Int}, nil
+		return &languages.VarAssemblyImmediate{Int: primitive.Num.Int}, nil
 	case primitive.Var != nil:
-		return &VarAssemblyImmediate{Var: &VarAssemblyVar{Generated: primitive.Var.Generated}}, nil
+		return &languages.VarAssemblyImmediate{Var: &languages.VarAssemblyVar{Generated: primitive.Var.Generated}}, nil
 	default:
 		return nil, errors.New("Unrecognized primitive")
 	}
 }
 
-func HandlePrimitive(primitive string, operands []*SimplePrimitive, target *VarAssemblyVar) ([]*VarAssemblyInstr, error) {
+func HandlePrimitive(primitive string, operands []*languages.SimplePrimitive, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
 	switch primitive {
 	case "+":
 		if len(operands) != 2 {
@@ -158,10 +159,10 @@ func HandlePrimitive(primitive string, operands []*SimplePrimitive, target *VarA
 			return nil, err
 		}
 
-        return []*VarAssemblyInstr{
-            &VarAssemblyInstr{
-                Add: &[3]*VarAssemblyImmediate{
-                    &VarAssemblyImmediate{Var: target},
+        return []*languages.VarAssemblyInstr{
+            &languages.VarAssemblyInstr{
+                Add: &[3]*languages.VarAssemblyImmediate{
+                    &languages.VarAssemblyImmediate{Var: target},
                     firstImm,
                     secondImm,
                 },

@@ -2,28 +2,29 @@ package main
 
 import (
     "errors"
+    "language/pkg/languages"
 )
 
-func RemoveComplexOperands(prog *FlatProgram, getVar func() *Var) (*SimpleProgram, error) {
-	var newStatements []*SimpleStatement
+func RemoveComplexOperands(prog *languages.FlatProgram, getVar func() *languages.Var) (*languages.SimpleProgram, error) {
+    var newStatements []*languages.SimpleStatement
 	for _, s := range(prog.Statements) {
 		statements, newAssigns, err := RemoveComplexOperandsFromStatement(s, getVar)
 		if err != nil {
 			return nil, err
 		}
 		for _, a := range(newAssigns) {
-			newStatements = append(newStatements, &SimpleStatement{Assignment: a})
+			newStatements = append(newStatements, &languages.SimpleStatement{Assignment: a})
 		}
 		newStatements = append(newStatements, statements...)
 	}
 
-	return &SimpleProgram{
+	return &languages.SimpleProgram{
         Statements: newStatements,
     }, nil
 }
 
-func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() *Var) ([]*SimpleStatement, []*SimpleAssignment, error) {
-	var newStatements []*SimpleStatement
+func RemoveComplexOperandsFromStatement(statement *languages.FlatStatement, getVar func() *languages.Var) ([]*languages.SimpleStatement, []*languages.SimpleAssignment, error) {
+	var newStatements []*languages.SimpleStatement
 	switch {
 	case statement.Expr != nil:
 		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Expr, false, getVar)
@@ -31,9 +32,9 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 			return nil, nil, err
 		}
 		for _, a := range(newAssigns) {
-			newStatements = append(newStatements, &SimpleStatement{Assignment: a})
+			newStatements = append(newStatements, &languages.SimpleStatement{Assignment: a})
 		}
-		newStatements = append(newStatements, &SimpleStatement{Expr: newExpr})
+		newStatements = append(newStatements, &languages.SimpleStatement{Expr: newExpr})
 		return newStatements, nil, nil
 	case statement.Assignment != nil:
 		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Assignment.Expr, true, getVar)
@@ -41,9 +42,9 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 			return nil, nil, err
 		}
 		for _, a := range(newAssigns) {
-			newStatements = append(newStatements, &SimpleStatement{Assignment: a})
+			newStatements = append(newStatements, &languages.SimpleStatement{Assignment: a})
 		}
-		newStatements = append(newStatements, &SimpleStatement{Assignment: &SimpleAssignment{Ref: statement.Assignment.Ref, Expr: newExpr}})
+		newStatements = append(newStatements, &languages.SimpleStatement{Assignment: &languages.SimpleAssignment{Ref: statement.Assignment.Ref, Expr: newExpr}})
 
 		return newStatements, nil, nil
     case statement.Return != nil:
@@ -52,9 +53,9 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 			return nil, nil, err
 		}
 		for _, a := range(newAssigns) {
-			newStatements = append(newStatements, &SimpleStatement{Assignment: a})
+			newStatements = append(newStatements, &languages.SimpleStatement{Assignment: a})
 		}
-		newStatements = append(newStatements, &SimpleStatement{Return: newExpr})
+		newStatements = append(newStatements, &languages.SimpleStatement{Return: newExpr})
 		return newStatements, nil, nil
 	default:
 		return nil, nil, errors.New("Unrecognized statement")
@@ -69,15 +70,15 @@ func RemoveComplexOperandsFromStatement(statement *FlatStatement, getVar func() 
 // logic works for user defined functions. Does the return value go into a defined register to be used? Would we
 // then have to worry about multiple function calls? Would that even possibly come up if we're the ones generating
 // the instructions? Questions for a later day.
-func RemoveComplexOperandsFromExpr(expr *FlatExpr, makeAtomic bool, getVar func() *Var) (*SimpleExpr, []*SimpleAssignment, error) {
+func RemoveComplexOperandsFromExpr(expr *languages.FlatExpr, makeAtomic bool, getVar func() *languages.Var) (*languages.SimpleExpr, []*languages.SimpleAssignment, error) {
     switch {
     case expr.Num != nil:
-        return &SimpleExpr{Primitive: &SimplePrimitive{Num: expr.Num}}, []*SimpleAssignment{}, nil
+        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Num: expr.Num}}, []*languages.SimpleAssignment{}, nil
     case expr.Var != nil:
-        return &SimpleExpr{Primitive: &SimplePrimitive{Var: expr.Var}}, []*SimpleAssignment{}, nil
+        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Var: expr.Var}}, []*languages.SimpleAssignment{}, nil
     case expr.App != nil:
-		var newExprs []*SimplePrimitive
-		var newAssignments []*SimpleAssignment
+		var newExprs []*languages.SimplePrimitive
+		var newAssignments []*languages.SimpleAssignment
 		for _, e := range(expr.App) {
 			// arguments to a function must be atomic
 			subExpr, subExprAssignments, err := GenerateAtomicExpression(e, getVar)
@@ -90,20 +91,20 @@ func RemoveComplexOperandsFromExpr(expr *FlatExpr, makeAtomic bool, getVar func(
 
 		rator, rands := newExprs[0], newExprs[1:]
 
-		newApp := &SimpleExpr{
-			App: &SimpleApplication{
+		newApp := &languages.SimpleExpr{
+			App: &languages.SimpleApplication{
 				Operator: rator.Var,
 				Operands: rands,
 			},
 		}
 		if makeAtomic {
 			newVar := getVar()
-			newAssignment := &SimpleAssignment{
+			newAssignment := &languages.SimpleAssignment{
 				Ref: newVar,
 				Expr: newApp,
 			}
-			newExpr := &SimpleExpr{
-				Primitive: &SimplePrimitive{
+			newExpr := &languages.SimpleExpr{
+				Primitive: &languages.SimplePrimitive{
 					Var: newVar,
 				},
 			}
@@ -118,15 +119,15 @@ func RemoveComplexOperandsFromExpr(expr *FlatExpr, makeAtomic bool, getVar func(
 
 // There is a lot of overlap here with the above function but it felt better doing it this way to help limit the types
 // Will probably see a cleaner way to do this in about 72 hours
-func GenerateAtomicExpression(expr *FlatExpr, getVar func() *Var) (*SimplePrimitive, []*SimpleAssignment, error) {
+func GenerateAtomicExpression(expr *languages.FlatExpr, getVar func() *languages.Var) (*languages.SimplePrimitive, []*languages.SimpleAssignment, error) {
 	switch {
 	case expr.Num != nil:
-		return &SimplePrimitive{Num: expr.Num}, []*SimpleAssignment{}, nil
+		return &languages.SimplePrimitive{Num: expr.Num}, []*languages.SimpleAssignment{}, nil
 	case expr.Var != nil:
-		return &SimplePrimitive{Var: expr.Var}, []*SimpleAssignment{}, nil
+		return &languages.SimplePrimitive{Var: expr.Var}, []*languages.SimpleAssignment{}, nil
 	case expr.App != nil:
-		var primitives []*SimplePrimitive
-		var newAssignments []*SimpleAssignment
+		var primitives []*languages.SimplePrimitive
+		var newAssignments []*languages.SimpleAssignment
 		for _, e := range(expr.App) {
 			primitive, subExprAssigns, err := GenerateAtomicExpression(e, getVar)
 			if err != nil {
@@ -140,26 +141,26 @@ func GenerateAtomicExpression(expr *FlatExpr, getVar func() *Var) (*SimplePrimit
 		if rator.Var == nil {
 			return nil, nil, errors.New("Attempt to apply something non-apply-able")
 		}
-		newApp := &SimpleExpr{
-			App: &SimpleApplication{
+		newApp := &languages.SimpleExpr{
+			App: &languages.SimpleApplication{
 				Operator: rator.Var,
 				Operands: rands,
 			},
 		}
 		newVar := getVar()
-		newAssignment := &SimpleAssignment{
+		newAssignment := &languages.SimpleAssignment{
 			Ref: newVar,
 			Expr: newApp,
 		}
 
-		return &SimplePrimitive{Var: newVar}, append(newAssignments, newAssignment), nil
+		return &languages.SimplePrimitive{Var: newVar}, append(newAssignments, newAssignment), nil
 
 	default:
 		return nil, nil, errors.New("Unrecognized FlatExpr type")
 	}
 }
 
-func IsExprSimple(expr *FlatExpr) bool {
+func IsExprSimple(expr *languages.FlatExpr) bool {
 	switch {
 	case expr.Num != nil:
 		return true
@@ -177,7 +178,7 @@ func IsExprSimple(expr *FlatExpr) bool {
 	}
 }
 
-func IsExprPrimitive(expr *FlatExpr) bool {
+func IsExprPrimitive(expr *languages.FlatExpr) bool {
 	switch {
 	case expr.Num != nil:
 		return true

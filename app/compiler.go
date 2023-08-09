@@ -3,27 +3,28 @@ package main
 import (
 	"fmt"
 	"os"
+    "language/pkg/languages"
 
 	"github.com/alecthomas/repr"
 )
 
 
-func CompileToFile(prog *Program, location string, debug bool) error {
+func CompileToFile(prog *languages.Program, location string, debug bool) error {
 	Arm, err := Compile(prog, debug)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(location, []byte(ArmProgramToString(Arm)), 0644)
+	return os.WriteFile(location, []byte(languages.ArmProgramToString(Arm)), 0644)
 }
 
-func Compile(prog *Program, debug bool) (*ArmProgram, error) {
+func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error) {
     if debug {
         fmt.Println("Initial program")
         repr.Println(prog)
     }
 
-	getVar := GetVarGenerator()
+	getVar := languages.GetVarGenerator()
 
 	// turning
 	// (+ 1 (let ((x 2)) (let ((x 3)) x)))
@@ -54,7 +55,7 @@ func Compile(prog *Program, debug bool) (*ArmProgram, error) {
 
     if debug {
         fmt.Println("Program after Flatten")
-        fmt.Println(FlatProgramToString(flatProg))
+        fmt.Println(languages.FlatProgramToString(flatProg))
     }
 
 	// turning
@@ -71,7 +72,7 @@ func Compile(prog *Program, debug bool) (*ArmProgram, error) {
 
     if debug {
         fmt.Println("Program after RemoveComplexOperands")
-        fmt.Println(SimpleProgramToString(simpleProg))
+        fmt.Println(languages.SimpleProgramToString(simpleProg))
     }
 
 	// Picks Arm instructions but keeps variables around
@@ -82,7 +83,7 @@ func Compile(prog *Program, debug bool) (*ArmProgram, error) {
 
     if debug {
         fmt.Println("Program after SelectInstructions")
-        fmt.Println(VarAssemblyProgramToString(varAssemblyProg))
+        fmt.Println(languages.VarAssemblyProgramToString(varAssemblyProg))
     }
 
 	// Assigns variables to registers
@@ -93,7 +94,7 @@ func Compile(prog *Program, debug bool) (*ArmProgram, error) {
 
     if debug {
         fmt.Println("Program after AssignRegisters")
-        fmt.Println(ArmProgramToString(assembly))
+        fmt.Println(languages.ArmProgramToString(assembly))
     }
 
 	// Removes some invalid and unnecessary instructions
@@ -101,7 +102,7 @@ func Compile(prog *Program, debug bool) (*ArmProgram, error) {
 
     if debug {
         fmt.Println("Program after PatchInstructions")
-        fmt.Println(ArmProgramToString(assembly))
+        fmt.Println(languages.ArmProgramToString(assembly))
     }
 
 	return patchedAssembly, nil

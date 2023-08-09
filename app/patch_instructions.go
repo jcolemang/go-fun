@@ -1,12 +1,13 @@
 package main
 
 import (
+    "language/pkg/languages"
 )
 
-func PatchInstructions(prog *ArmProgram) *ArmProgram {
-	newInstrs := make([]*ArmInstr, 0)
+func PatchInstructions(prog *languages.ArmProgram) *languages.ArmProgram {
+	newInstrs := make([]*languages.ArmInstr, 0)
 	mainLabel := "_start"
-	newInstrs = append(newInstrs, &ArmInstr{
+	newInstrs = append(newInstrs, &languages.ArmInstr{
 		Label: &mainLabel,
 	})
 
@@ -14,19 +15,19 @@ func PatchInstructions(prog *ArmProgram) *ArmProgram {
 		newInstrs = append(newInstrs, PatchInstruction(instr)...)
 	}
 
-	return &ArmProgram{
+	return &languages.ArmProgram{
         ArmDirectives: append(
             prog.ArmDirectives,
-            []*ArmDirective{
-                &ArmDirective{Name: "global", Arg: "_start"},
-                &ArmDirective{Name: "align", Arg: "4"},
+            []*languages.ArmDirective{
+                &languages.ArmDirective{Name: "global", Arg: "_start"},
+                &languages.ArmDirective{Name: "align", Arg: "4"},
             }...,
         ),
 		ArmInstrs: newInstrs,
 	}
 }
 
-func PatchInstruction(instr *ArmInstr) []*ArmInstr {
+func PatchInstruction(instr *languages.ArmInstr) []*languages.ArmInstr {
 	switch {
 	// can just remove useless Movs
 	// til how to use multiline statements!
@@ -35,31 +36,31 @@ func PatchInstruction(instr *ArmInstr) []*ArmInstr {
 			instr.Mov[1].ArmOffset != nil &&
 			*instr.Mov[0].ArmOffset == *instr.Mov[1].ArmOffset &&
 			instr.Mov[0].ArmOffsetReg.Name == instr.Mov[1].ArmOffsetReg.Name:
-		return []*ArmInstr{}
-	case instr.Add != nil && !IsRegister(*instr.Add[1]) && !IsRegister(*instr.Add[2]):
-		return []*ArmInstr{
-			&ArmInstr{
-				Mov: []*ArmArg{
-					&ArmArg{
-						ArmReg: TempReg(),
+		return []*languages.ArmInstr{}
+	case instr.Add != nil && !languages.IsRegister(*instr.Add[1]) && !languages.IsRegister(*instr.Add[2]):
+		return []*languages.ArmInstr{
+			&languages.ArmInstr{
+				Mov: []*languages.ArmArg{
+					&languages.ArmArg{
+						ArmReg: languages.TempReg(),
 					},
 					instr.Add[1],
 				},
 			},
-			&ArmInstr{
-				Add: []*ArmArg{
+			&languages.ArmInstr{
+				Add: []*languages.ArmArg{
                     instr.Add[0],
-					&ArmArg{
-						ArmReg: TempReg(),
+					&languages.ArmArg{
+						ArmReg: languages.TempReg(),
 					},
 					instr.Add[2],
 				},
 			},
 		}
-    case instr.Add != nil && !IsRegister(*instr.Add[1]):
-		return []*ArmInstr{
-			&ArmInstr{
-				Add: []*ArmArg{
+    case instr.Add != nil && !languages.IsRegister(*instr.Add[1]):
+		return []*languages.ArmInstr{
+			&languages.ArmInstr{
+				Add: []*languages.ArmArg{
                     instr.Add[0],
 					instr.Add[2],
 					instr.Add[1],
@@ -67,6 +68,6 @@ func PatchInstruction(instr *ArmInstr) []*ArmInstr {
 			},
 		}
 	default:
-		return []*ArmInstr{instr}
+		return []*languages.ArmInstr{instr}
 	}
 }

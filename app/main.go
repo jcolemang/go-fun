@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+    "language/pkg/languages"
 
 	"github.com/alecthomas/kong"
 )
@@ -12,7 +13,7 @@ var cli struct {
 }
 
 func main() {
-    parser := GetLanguageParser()
+    parser := languages.GetLanguageParser()
 	ctx := kong.Parse(&cli)
 	for _, file := range cli.Files {
 		r, err := os.Open(file)

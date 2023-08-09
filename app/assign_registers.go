@@ -4,11 +4,12 @@ import (
 	"errors"
 	"strconv"
     "fmt"
+    "language/pkg/languages"
     "github.com/alecthomas/repr"
 	"golang.org/x/exp/slices"
 )
 
-func AssignRegisters(prog *VarAssemblyProgram, debug bool) (*ArmProgram, error) {
+func AssignRegisters(prog *languages.VarAssemblyProgram, debug bool) (*languages.ArmProgram, error) {
     liveAfterSets := UncoverLive(prog.Instrs)
 	interferenceGraph := BuildInterferenceGraph(liveAfterSets)
 	colorings := ColorGraph(interferenceGraph)
@@ -19,7 +20,7 @@ func AssignRegisters(prog *VarAssemblyProgram, debug bool) (*ArmProgram, error) 
         fmt.Println(LiveAfterSetsToString(liveAfterSets))
     }
 
-	newInstrs := make([]*ArmInstr, len(prog.Instrs))
+	newInstrs := make([]*languages.ArmInstr, len(prog.Instrs))
 	for i, instr := range prog.Instrs {
 		switch {
 		case instr.Add != nil:
@@ -36,8 +37,8 @@ func AssignRegisters(prog *VarAssemblyProgram, debug bool) (*ArmProgram, error) 
 			if err != nil {
 				return nil, err
 			}
-			newInstrs[i] = &ArmInstr{
-				Add: []*ArmArg{
+			newInstrs[i] = &languages.ArmInstr{
+				Add: []*languages.ArmArg{
 					firstArm,
 					secondArm,
                     thirdArm,
@@ -54,22 +55,22 @@ func AssignRegisters(prog *VarAssemblyProgram, debug bool) (*ArmProgram, error) 
 			if err != nil {
 				return nil, err
 			}
-			newInstrs[i] = &ArmInstr{
-				Mov: []*ArmArg{
+			newInstrs[i] = &languages.ArmInstr{
+				Mov: []*languages.ArmArg{
 					firstArm,
 					secondArm,
 				},
 			}
         case instr.Ret != nil:
-			newInstrs[i] = &ArmInstr{
-				Ret: &Ret{},
+			newInstrs[i] = &languages.ArmInstr{
+				Ret: &languages.Ret{},
             }
 		}
 
 	}
 
-	return &ArmProgram{
-		ArmDirectives: []*ArmDirective{},
+	return &languages.ArmProgram{
+		ArmDirectives: []*languages.ArmDirective{},
 		ArmInstrs: newInstrs,
 	}, nil
 }
@@ -116,14 +117,14 @@ func BuildInterferenceGraph(liveAfterSets []*LiveAfterInstr) *Graph[Location] {
 }
 
 type LiveAfterInstr struct {
-	Instr *VarAssemblyInstr
+	Instr *languages.VarAssemblyInstr
 	LiveAfter map[Location]bool
 }
 
 func LiveAfterSetsToString(instrs []*LiveAfterInstr) string {
     repr := ""
     for _, i := range(instrs) {
-        instrStr := VarAssemblyInstrToString(i.Instr)
+        instrStr := languages.VarAssemblyInstrToString(i.Instr)
         liveBeforeStr := ""
         for key, _ := range(i.LiveAfter) {
             locationStr := LocationToStr(key)
@@ -134,8 +135,8 @@ func LiveAfterSetsToString(instrs []*LiveAfterInstr) string {
     return repr
 }
 
-func UncoverLive(instructions []*VarAssemblyInstr) []*LiveAfterInstr {
-	reversedInstrs := make([]*VarAssemblyInstr, len(instructions))
+func UncoverLive(instructions []*languages.VarAssemblyInstr) []*LiveAfterInstr {
+	reversedInstrs := make([]*languages.VarAssemblyInstr, len(instructions))
 	copy(reversedInstrs, instructions)
 	slices.Reverse(reversedInstrs)
 
@@ -156,22 +157,22 @@ func UncoverLive(instructions []*VarAssemblyInstr) []*LiveAfterInstr {
 
 type StackLocation struct {
 	Offset int
-	Register Register
+	Register languages.Register
 }
 
 // converting everything to this location type makes things awkward when I need to look up the
 // location coloring for an instruction as the instruction does not itself contain a location
 type Location struct {
 	// Register Register // why would registers need to get assigned to registers?
-	Variable VarAssemblyVar
+	Variable languages.VarAssemblyVar
 	// Stack StackLocation // also, would would stack locations need to get assigned to registers?
 }
 
 // putting this here because of its dependence on this other silly function
-func VarImmToArmArg(varImm *VarAssemblyImmediate, colorings map[Location]int) (*ArmArg, error) {
+func VarImmToArmArg(varImm *languages.VarAssemblyImmediate, colorings map[Location]int) (*languages.ArmArg, error) {
 	switch {
 	case varImm.Int != nil:
-		return &ArmArg{
+		return &languages.ArmArg{
 			ArmInt: varImm.Int,
 		}, nil
 	case varImm.Var != nil: // this same type test is done twice here and in ImmToLoc which is silly
@@ -184,9 +185,9 @@ func VarImmToArmArg(varImm *VarAssemblyImmediate, colorings map[Location]int) (*
 			// return nil, errors.New("I made a mistake and there is an unassigned location")
 			assignment = 0
 		}
-		return GetLocation(assignment), nil
+		return languages.GetLocation(assignment), nil
 	case varImm.Register != nil:
-		return &ArmArg{
+		return &languages.ArmArg{
 			ArmReg: varImm.Register,
 		}, nil
 	default: // must be a register, but I haven't handled that yet
@@ -198,7 +199,7 @@ func VarImmToArmArg(varImm *VarAssemblyImmediate, colorings map[Location]int) (*
 	}
 }
 
-func ImmToLoc(imm *VarAssemblyImmediate) (*Location, error) {
+func ImmToLoc(imm *languages.VarAssemblyImmediate) (*Location, error) {
 	switch {
 	case imm.Var != nil:
 		return &Location{Variable: *imm.Var}, nil
@@ -224,7 +225,7 @@ func LocationToStr(l Location) string {
 // the logic here is that any locations written are OVERwritten and so are no longer live
 // if a location is written to but never read, it will never be added to the set. the mere reference
 // to a location does not imply that it will be live.
-func LiveBefore(instruction *VarAssemblyInstr, liveAfter map[Location]bool) map[Location]bool {
+func LiveBefore(instruction *languages.VarAssemblyInstr, liveAfter map[Location]bool) map[Location]bool {
     read, written := LocationsReadWritten(instruction)
     return MergeMaps(MapDifference(liveAfter, written), read)
 }
@@ -251,7 +252,7 @@ func MapDifference(m1 map[Location]bool, m2 map[Location]bool) map[Location]bool
     return newMap
 }
 
-func LocationsReadWritten(instr *VarAssemblyInstr) (map[Location]bool, map[Location]bool) {
+func LocationsReadWritten(instr *languages.VarAssemblyInstr) (map[Location]bool, map[Location]bool) {
 	locationsRead := make(map[Location]bool)
     locationsWritten := make(map[Location]bool)
     switch {
@@ -266,7 +267,7 @@ func LocationsReadWritten(instr *VarAssemblyInstr) (map[Location]bool, map[Locat
     return locationsRead, locationsWritten
 }
 
-func LocationsReferenced(arg *VarAssemblyImmediate) map[Location]bool {
+func LocationsReferenced(arg *languages.VarAssemblyImmediate) map[Location]bool {
     locations := make(map[Location]bool)
     switch {
     case arg.Var != nil:

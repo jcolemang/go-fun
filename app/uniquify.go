@@ -2,14 +2,15 @@ package main
 
 import (
     "errors"
+    "language/pkg/languages"
 )
 
 type Env struct {
 	Parent *Env
-	Vars map[Var]*Var
+	Vars map[languages.Var]*languages.Var
 }
 
-func Lookup(variable *Var, env *Env) (*Var, bool) {
+func Lookup(variable *languages.Var, env *Env) (*languages.Var, bool) {
 	v, ok := env.Vars[*variable]
 	if ok {
 		return v, true
@@ -21,11 +22,11 @@ func Lookup(variable *Var, env *Env) (*Var, bool) {
 	return Lookup(variable, env.Parent)
 }
 
-func Uniquify(prog *Program, getVar func() *Var) (*Program, error) {
+func Uniquify(prog *languages.Program, getVar func() *languages.Var) (*languages.Program, error) {
 	env := &Env{
-		Vars: make(map[Var]*Var),
+		Vars: make(map[languages.Var]*languages.Var),
 	}
-	for _, v := range(GetBuiltIns()) {
+	for _, v := range(languages.GetBuiltIns()) {
 		env.Vars[*v] = v
 	}
 
@@ -33,25 +34,25 @@ func Uniquify(prog *Program, getVar func() *Var) (*Program, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Program{
+	return &languages.Program{
 		Expr: uniqExpr,
 	}, nil
 }
 
-func UniquifyExpr(expr *Expr, env *Env, getVar func() *Var) (*Expr, error) {
+func UniquifyExpr(expr *languages.Expr, env *Env, getVar func() *languages.Var) (*languages.Expr, error) {
 	switch {
 	case expr.Num != nil:
 		return expr, nil
 	case expr.Var != nil:
 		v, ok := Lookup(expr.Var, env)
 		if ok {
-			return &Expr{Var: v}, nil
+			return &languages.Expr{Var: v}, nil
 		} else {
 			return nil, errors.New("Unbound variable: " + expr.Var.Name)
 		}
 	case expr.Let != nil:
-		boundVars := make(map[Var]*Var)
-		var newAssignments []*Assignment
+		boundVars := make(map[languages.Var]*languages.Var)
+		var newAssignments []*languages.Assignment
 		for _, assignment := range(expr.Let.LetAssignments) {
 			newVar := getVar()
 			boundVars[*assignment.Ref] = newVar
@@ -60,7 +61,7 @@ func UniquifyExpr(expr *Expr, env *Env, getVar func() *Var) (*Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			newAssignments = append(newAssignments, &Assignment{
+			newAssignments = append(newAssignments, &languages.Assignment{
 				Ref: newVar,
 				Expr: newAssignmentExpr,
 			})
@@ -75,14 +76,14 @@ func UniquifyExpr(expr *Expr, env *Env, getVar func() *Var) (*Expr, error) {
 			return nil, err
 		}
 
-		return &Expr{
-			Let: &LetExpr {
+		return &languages.Expr{
+			Let: &languages.LetExpr {
 				LetAssignments: newAssignments,
 				LetBody: newBody,
 			},
 		}, nil
 	case expr.App != nil:
-		var newExprs []*Expr
+		var newExprs []*languages.Expr
 		for _, e := range(expr.App) {
 			newExpr, err := UniquifyExpr(e, env, getVar)
 			if err != nil {
@@ -90,7 +91,7 @@ func UniquifyExpr(expr *Expr, env *Env, getVar func() *Var) (*Expr, error) {
 			}
 			newExprs = append(newExprs, newExpr)
 		}
-		return &Expr{
+		return &languages.Expr{
 			App: newExprs,
 		}, nil
 	default:
