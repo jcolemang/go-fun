@@ -4,7 +4,10 @@ import (
 	"errors"
 	"strconv"
     "fmt"
+
     "language/pkg/languages"
+    "language/pkg/graph"
+
     "github.com/alecthomas/repr"
 	"golang.org/x/exp/slices"
 )
@@ -12,7 +15,7 @@ import (
 func AssignRegisters(prog *languages.VarAssemblyProgram, debug bool) (*languages.ArmProgram, error) {
     liveAfterSets := UncoverLive(prog.Instrs)
 	interferenceGraph := BuildInterferenceGraph(liveAfterSets)
-	colorings := ColorGraph(interferenceGraph)
+	colorings := graph.ColorGraph(interferenceGraph)
 
     if debug {
         repr.Println(interferenceGraph)
@@ -82,8 +85,8 @@ func AssignRegisters(prog *languages.VarAssemblyProgram, debug bool) (*languages
 // if s = v, then v does not interfere with d because v and d contain the same value.
 // if d = v, then v does not interfere with d because v and d trivially contain the same value
 // (this second if is the same in the other instructions)
-func BuildInterferenceGraph(liveAfterSets []*LiveAfterInstr) *Graph[Location] {
-	graph := NewGraph[Location]()
+func BuildInterferenceGraph(liveAfterSets []*LiveAfterInstr) *graph.Graph[Location] {
+	newGraph := graph.NewGraph[Location]()
 	for _, liveAfterSet := range(liveAfterSets) {
 		read, written := LocationsReadWritten(liveAfterSet.Instr)
 
@@ -92,28 +95,28 @@ func BuildInterferenceGraph(liveAfterSets []*LiveAfterInstr) *Graph[Location] {
 			// this is a weird block but there is guaranteed to be only one read and written location
 			// maybe a better way to pattern match or a better data structure?
 			for readLoc, _ := range(read) {
-				graph = AddNode(*graph, readLoc)
+				newGraph = graph.AddNode(*newGraph, readLoc)
 				for writtenLoc, _ := range(written) {
-					graph = AddNode(*graph, writtenLoc)
+					newGraph = graph.AddNode(*newGraph, writtenLoc)
 					for liveAfterLoc, _ := range(liveAfterSet.LiveAfter) {
 						if liveAfterLoc != writtenLoc && liveAfterLoc != readLoc {
-							graph = AddEdge(*graph, writtenLoc, liveAfterLoc)
+							newGraph = graph.AddEdge(*newGraph, writtenLoc, liveAfterLoc)
 						}
 					}
 				}
 			}
 		default:
 			for writtenLoc, _ := range(written) {
-				graph = AddNode(*graph, writtenLoc)
+				newGraph = graph.AddNode(*newGraph, writtenLoc)
 				for liveAfterLoc, _ := range(liveAfterSet.LiveAfter) {
 					if writtenLoc != liveAfterLoc {
-						graph = AddEdge(*graph, writtenLoc, liveAfterLoc)
+						newGraph = graph.AddEdge(*newGraph, writtenLoc, liveAfterLoc)
 					}
 				}
 			}
 		}
 	}
-	return graph
+	return newGraph
 }
 
 type LiveAfterInstr struct {

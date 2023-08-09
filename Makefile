@@ -8,7 +8,7 @@ program: runtime.o assembly.o
 assembly.o: assembly.s
 	as -arch arm64 -o assembly.o assembly.s
 
-assembly.s: ./app/*
+assembly.s: ./app/* ./pkg/**/*
 	go run ./app/* $(PROG)
 
 runtime.o: runtime.c runtime.h
