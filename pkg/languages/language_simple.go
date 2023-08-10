@@ -13,6 +13,7 @@ type SimpleProgram struct {
 
 type SimpleStatement struct {
 	Expr *SimpleExpr
+    IfStmt *SimpleIfStmt
 	Assignment *SimpleAssignment
     Return *SimpleExpr
 }
@@ -22,9 +23,16 @@ type SimpleExpr struct {
     App *SimpleApplication
 }
 
+type SimpleIfStmt struct {
+    IfCond *SimplePrimitive
+    IfTrue []*SimpleStatement // cannot pull out statements for evaluation in each branch
+    IfFalse []*SimpleStatement
+}
+
 type SimplePrimitive struct {
 	Num *Num
 	Var *Var
+    Bool *Bool
 }
 
 type SimpleApplication struct {

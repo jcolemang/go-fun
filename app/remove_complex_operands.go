@@ -112,9 +112,77 @@ func RemoveComplexOperandsFromExpr(expr *languages.FlatExpr, makeAtomic bool, ge
 		} else {
 		return newApp, newAssignments, nil
 		}
+	case expr.IfExpr != nil:
+        return RemoveComplexOperandsFromIf(expr.IfExpr, makeAtomic, getVar)
     default:
         return nil, nil, errors.New("Unrecognized expression type")
     }
+}
+
+// As I code this I'm convincing myself this should maybe be its own pass, but I also think
+// that ifs as expressions could themselves be considered "complex". In other words, removing
+// the complex operands from `x = (if whatever something else)` really requires reordering the if.
+// This is just as well an argument that it should be a separate pass, just a pass prior to this one,
+// but this is _my_ program and I get to make it bad any way I please.
+func RemoveComplexOperandsFromIf(ifExpr *languages.FlatIfExpr, makeAtomic bool, getVar func() *languages.Var) (*languages.SimpleExpr, []*languages.SimpleAssignment, error) {
+	    var newCondStatements []*languages.SimpleStatement
+	    var newTrueStatements []*languages.SimpleStatement
+	    var newFalseStatements []*languages.SimpleStatement
+		newIfCond, newAssigns, err := RemoveComplexOperandsFromExpr(expr.IfExpr.IfCond, true, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, a := range(newAssigns) {
+			newCondStatements = append(newCondStatements, &languages.SimpleStatement{Assignment: a})
+		}
+
+        branchVar := getVar()
+		newIfTrueExpr, newTrueAssigns, err := RemoveComplexOperandsFromStatement(expr.IfExpr.IfTrue, false, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, a := range(newTrueAssigns) {
+			newTrueStatements = append(newTrueStatements, &languages.SimpleStatement{Assignment: a})
+		}
+        newTrueStatements = append(
+            newTrueStatements,
+            &languages.SimpleStatement{
+                Assignment: &languages.SimpleAssignment{
+                    Ref: branchVar,
+                    Expr: newIfTrueExpr,
+                },
+            },
+        )
+
+		newIfFalseExpr, newFalseAssigns, err := RemoveComplexOperandsFromExpr(statement.IfStmt.IfFalse, true, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, a := range(newFalseAssigns) {
+			newFalseStatements = append(newFalseStatements, &languages.SimpleStatement{Assignment: a})
+		}
+        newFalseStatements = append(
+            newFalseStatements,
+            &languages.SimpleStatement{
+                Assignment: &languages.SimpleAssignment{
+                    Ref: branchVar,
+                    Expr: newIfFalseExpr,
+                },
+            },
+        )
+
+		newStatements = append(
+            newStatements,
+            &languages.SimpleStatement{
+                IfStmt: &languages.SimpleIfStmt{
+                    IfCond: newIfCond,
+                    IfTrue: newTrueStatements,
+                    IfFalse: newFalseStatements,
+                },
+            },
+        )
+		return newStatements, nil, nil
+
 }
 
 // There is a lot of overlap here with the above function but it felt better doing it this way to help limit the types

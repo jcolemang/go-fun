@@ -16,9 +16,17 @@ type FlatStatement struct {
 }
 
 type FlatExpr struct {
+    Bool *Bool
 	Num *Num
     Var *Var
     App []*FlatExpr
+    IfExpr *FlatIfExpr
+}
+
+type FlatIfExpr struct {
+    IfCond *FlatExpr
+    IfTrue []*FlatStatement
+    IfFalse []*FlatStatement
 }
 
 type FlatAssignment struct {

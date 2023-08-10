@@ -43,6 +43,8 @@ func UniquifyExpr(expr *languages.Expr, env *Env, getVar func() *languages.Var) 
 	switch {
 	case expr.Num != nil:
 		return expr, nil
+	case expr.Bool != nil:
+		return expr, nil
 	case expr.Var != nil:
 		v, ok := Lookup(expr.Var, env)
 		if ok {
@@ -52,7 +54,7 @@ func UniquifyExpr(expr *languages.Expr, env *Env, getVar func() *languages.Var) 
 		}
 	case expr.Let != nil:
 		boundVars := make(map[languages.Var]*languages.Var)
-		var newAssignments []*languages.Assignment
+		var newAssignments []*languages.Assignment[languages.Expr]
 		for _, assignment := range(expr.Let.LetAssignments) {
 			newVar := getVar()
 			boundVars[*assignment.Ref] = newVar
@@ -61,7 +63,7 @@ func UniquifyExpr(expr *languages.Expr, env *Env, getVar func() *languages.Var) 
 			if err != nil {
 				return nil, err
 			}
-			newAssignments = append(newAssignments, &languages.Assignment{
+			newAssignments = append(newAssignments, &languages.Assignment[languages.Expr]{
 				Ref: newVar,
 				Expr: newAssignmentExpr,
 			})
@@ -94,7 +96,27 @@ func UniquifyExpr(expr *languages.Expr, env *Env, getVar func() *languages.Var) 
 		return &languages.Expr{
 			App: newExprs,
 		}, nil
+	case expr.IfExpr != nil:
+        newIfCond, err := UniquifyExpr(expr.IfExpr.IfCond, env, getVar)
+        if err != nil {
+            return nil, err
+        }
+        newIfTrue, err := UniquifyExpr(expr.IfExpr.IfTrue, env, getVar)
+        if err != nil {
+            return nil, err
+        }
+        newIfFalse, err := UniquifyExpr(expr.IfExpr.IfFalse, env, getVar)
+        if err != nil {
+            return nil, err
+        }
+		return &languages.Expr{
+			IfExpr: &languages.IfExpr{
+                IfCond: newIfCond,
+                IfTrue: newIfTrue,
+                IfFalse: newIfFalse,
+            },
+		}, nil
 	default:
-		return nil, errors.New("Unrecognized expression type")
+		return nil, errors.New("Unrecognized expression type in uniquify pass")
 	}
 }

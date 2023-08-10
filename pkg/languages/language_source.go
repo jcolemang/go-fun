@@ -19,24 +19,28 @@ type Program struct {
 }
 
 type Expr struct {
-	Bool *Bool    `@@`
-	Num *Num      `| @@`
-    Var *Var      `| @@`
-	Let *LetExpr  `| @@`
-    App []*Expr   `| "(" @@ @@* ")" `
-    IfCond *Expr  `| "(" "if" @@`
-    IfTrue *Expr  `  @@`
-    IfFalse *Expr `  @@ ")"`
+	Bool *Bool     `@@`
+	Num *Num       `| @@`
+	Let *LetExpr   `| @@`
+    IfExpr *IfExpr `| @@`
+    App []*Expr    `| "(" @@ @@* ")" `
+    Var *Var       `| @@`
+}
+
+type IfExpr struct {
+	IfCond *Expr  `"(" "if" @@`
+	IfTrue *Expr  `@@`
+    IfFalse *Expr `@@ ")"`
 }
 
 type LetExpr struct {
-	LetAssignments []*Assignment `"(" "let" "(" @@ @@* ")"`
-	LetBody *Expr                   `@@ ")"`
+	LetAssignments []*Assignment[Expr] `"(" "let" "(" @@ @@* ")"`
+	LetBody *Expr                      `@@ ")"`
 }
 
-type Assignment struct {
+type Assignment [T any] struct {
 	Ref *Var   `"(" @@`
-	Expr *Expr `@@ ")"`
+	Expr *T `@@ ")"`
 }
 
 // have this separated to also handle floats
