@@ -5,7 +5,7 @@ import (
     "language/pkg/languages"
 )
 
-func RemoveComplexOperands(prog *languages.FlatProgram, getVar func() *languages.Var) (*languages.SimpleProgram, error) {
+func RemoveComplexOperands(prog *languages.IfStmtProgram, getVar func() *languages.Var) (*languages.SimpleProgram, error) {
     var newStatements []*languages.SimpleStatement
 	for _, s := range(prog.Statements) {
 		statements, newAssigns, err := RemoveComplexOperandsFromStatement(s, getVar)
@@ -23,7 +23,7 @@ func RemoveComplexOperands(prog *languages.FlatProgram, getVar func() *languages
     }, nil
 }
 
-func RemoveComplexOperandsFromStatement(statement *languages.FlatStatement, getVar func() *languages.Var) ([]*languages.SimpleStatement, []*languages.SimpleAssignment, error) {
+func RemoveComplexOperandsFromStatement(statement *languages.IfStmtStatement, getVar func() *languages.Var) ([]*languages.SimpleStatement, []*languages.SimpleAssignment, error) {
 	var newStatements []*languages.SimpleStatement
 	switch {
 	case statement.Expr != nil:
@@ -70,7 +70,7 @@ func RemoveComplexOperandsFromStatement(statement *languages.FlatStatement, getV
 // logic works for user defined functions. Does the return value go into a defined register to be used? Would we
 // then have to worry about multiple function calls? Would that even possibly come up if we're the ones generating
 // the instructions? Questions for a later day.
-func RemoveComplexOperandsFromExpr(expr *languages.FlatExpr, makeAtomic bool, getVar func() *languages.Var) (*languages.SimpleExpr, []*languages.SimpleAssignment, error) {
+func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, makeAtomic bool, getVar func() *languages.Var) (*languages.SimpleExpr, []*languages.SimpleAssignment, error) {
     switch {
     case expr.Num != nil:
         return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Num: expr.Num}}, []*languages.SimpleAssignment{}, nil
@@ -112,8 +112,6 @@ func RemoveComplexOperandsFromExpr(expr *languages.FlatExpr, makeAtomic bool, ge
 		} else {
 		return newApp, newAssignments, nil
 		}
-	case expr.IfExpr != nil:
-        return RemoveComplexOperandsFromIf(expr.IfExpr, makeAtomic, getVar)
     default:
         return nil, nil, errors.New("Unrecognized expression type")
     }
@@ -124,6 +122,7 @@ func RemoveComplexOperandsFromExpr(expr *languages.FlatExpr, makeAtomic bool, ge
 // the complex operands from `x = (if whatever something else)` really requires reordering the if.
 // This is just as well an argument that it should be a separate pass, just a pass prior to this one,
 // but this is _my_ program and I get to make it bad any way I please.
+/*
 func RemoveComplexOperandsFromIf(ifExpr *languages.FlatIfExpr, makeAtomic bool, getVar func() *languages.Var) (*languages.SimpleExpr, []*languages.SimpleAssignment, error) {
 	    var newCondStatements []*languages.SimpleStatement
 	    var newTrueStatements []*languages.SimpleStatement
@@ -184,10 +183,11 @@ func RemoveComplexOperandsFromIf(ifExpr *languages.FlatIfExpr, makeAtomic bool, 
 		return newStatements, nil, nil
 
 }
+*/
 
 // There is a lot of overlap here with the above function but it felt better doing it this way to help limit the types
 // Will probably see a cleaner way to do this in about 72 hours
-func GenerateAtomicExpression(expr *languages.FlatExpr, getVar func() *languages.Var) (*languages.SimplePrimitive, []*languages.SimpleAssignment, error) {
+func GenerateAtomicExpression(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.SimplePrimitive, []*languages.SimpleAssignment, error) {
 	switch {
 	case expr.Num != nil:
 		return &languages.SimplePrimitive{Num: expr.Num}, []*languages.SimpleAssignment{}, nil

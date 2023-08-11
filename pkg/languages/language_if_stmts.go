@@ -10,20 +10,21 @@ type IfStmtProgram struct {
 
 // how on earth do I name this
 type IfStmtStatement struct {
-	Expr *FlatExpr
+	Expr *IfStmtExpr
 	Assignment *Assignment[IfStmtExpr]
-    Return *FlatExpr
-    IfStmt *FlatIfStmt
+    Return *IfStmtExpr
+    IfStmt *IfStmtIfStmt
 }
 
 type IfStmtExpr struct {
     Bool *Bool
 	Num *Num
     Var *Var
-    App []*FlatExpr
+    App []*IfStmtExpr
 }
 
-type FlatIfStmt struct {
+// just for fun
+type IfStmtIfStmt struct {
     IfCond *IfStmtExpr
     IfTrue []*IfStmtStatement
     IfFalse []*IfStmtStatement

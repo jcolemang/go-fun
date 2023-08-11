@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
     "language/pkg/languages"
+    "language/pkg/passes"
 
 	"github.com/alecthomas/repr"
 )
@@ -58,6 +59,11 @@ func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error)
         fmt.Println(languages.FlatProgramToString(flatProg))
     }
 
+    noIfExprProg, err := passes.UnexpressionFlatProgram(flatProg, getVar)
+    if err != nil {
+        return nil, err
+    }
+
 	// turning
 	// (+ 1 (+ 2 (+ 3 4)))
 	// into
@@ -65,7 +71,7 @@ func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error)
 	// tmp2 = (+ 2 tmp1)
 	// (+ 1 tmp2)
 	// In other works, squashes out subexpressions
-	simpleProg, err := RemoveComplexOperands(flatProg, getVar)
+	simpleProg, err := RemoveComplexOperands(noIfExprProg, getVar)
 	if err != nil {
 		return nil, err
 	}
