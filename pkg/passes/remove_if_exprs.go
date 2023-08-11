@@ -5,6 +5,11 @@ import (
     "language/pkg/languages"
 )
 
+// turning (+ 1 (if #t 2 3)) into
+// (if #t
+//   x = 2
+//   x = 3)
+// (+ 1 x)
 func IfExprsToStmts(prog *languages.FlatProgram, getVar func() *languages.Var) (*languages.IfStmtProgram, error) {
     var newStatements []*languages.IfStmtStatement
 	for _, s := range(prog.Statements) {
