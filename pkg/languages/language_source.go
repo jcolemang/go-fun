@@ -49,8 +49,8 @@ type Num struct {
 }
 
 type Bool struct {
-	True *Empty  `"#True"`
-	False *Empty `| "#False"`
+	True *string  `@"#True"`
+	False *string `| @"#False"`
 }
 
 type Var struct {

@@ -69,6 +69,12 @@ func SimpleStatementToString(statement *SimpleStatement) string {
 func SimplePrimitiveToString(prim *SimplePrimitive) string {
 	if prim.Num != nil {
 		return fmt.Sprint(*prim.Num.Int)
+	} else if prim.Bool != nil {
+        if prim.Bool.True != nil {
+            return "#true"
+        } else {
+            return "#false"
+        }
 	} else {
 		return VarToString(prim.Var)
 	}

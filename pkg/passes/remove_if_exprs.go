@@ -68,7 +68,9 @@ func UnexpressionFlatStatement(stmt *languages.FlatStatement, getVar func() *lan
 func UnexpressionFlatExpr(expr *languages.FlatExpr, getVar func() *languages.Var) (*languages.IfStmtExpr, []*languages.IfStmtStatement, error) {
     switch {
         case expr.Bool != nil:
-            return nil, nil, errors.New("Haven't gotten here yet bool")
+            return &languages.IfStmtExpr{
+                Bool: expr.Bool,
+            }, make([]*languages.IfStmtStatement, 0), nil
         case expr.Num != nil:
             return &languages.IfStmtExpr{
                 Num: expr.Num,

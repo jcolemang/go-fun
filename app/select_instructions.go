@@ -74,28 +74,45 @@ func SelectInstructionsStmt(stmt *languages.SimpleStatement, getVar func() *lang
 func SelectInstructionsExpr(expr *languages.SimpleExpr, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
 	switch {
 	case expr.Primitive != nil:
+        if target == nil {
+	        return []*languages.VarAssemblyInstr{}, nil
+        }
 		switch {
 		case expr.Primitive.Num != nil:
-			if target != nil {
-				var val *languages.VarAssemblyImmediate
-				if expr.Primitive.Num.Int != nil {
-					val = &languages.VarAssemblyImmediate{
-						Int: expr.Primitive.Num.Int,
-					}
-				} else {
-					return nil, errors.New("Unrecognized number type")
-				}
-				return []*languages.VarAssemblyInstr{
-					&languages.VarAssemblyInstr{
-						Mov: &[2]*languages.VarAssemblyImmediate{
-							&languages.VarAssemblyImmediate{Var: target},
-							val,
-						},
-					},
-				}, nil
-			} else {
-				return []*languages.VarAssemblyInstr{}, nil
-			}
+            var val *languages.VarAssemblyImmediate
+            if expr.Primitive.Num.Int != nil {
+                val = &languages.VarAssemblyImmediate{
+                    Int: expr.Primitive.Num.Int,
+                }
+            } else {
+                return nil, errors.New("Unrecognized number type")
+            }
+            return []*languages.VarAssemblyInstr{
+                &languages.VarAssemblyInstr{
+                    Mov: &[2]*languages.VarAssemblyImmediate{
+                        &languages.VarAssemblyImmediate{Var: target},
+                        val,
+                    },
+                },
+            }, nil
+		case expr.Primitive.Bool != nil:
+            var boolVal int
+            if expr.Primitive.Bool.True != nil {
+                boolVal = 1
+            } else {
+                boolVal = 0
+            }
+            val := &languages.VarAssemblyImmediate{
+                Int: &boolVal,
+            }
+            return []*languages.VarAssemblyInstr{
+                &languages.VarAssemblyInstr{
+                    Mov: &[2]*languages.VarAssemblyImmediate{
+                        &languages.VarAssemblyImmediate{Var: target},
+                        val,
+                    },
+                },
+            }, nil
 		case expr.Primitive.Var != nil:
 			return []*languages.VarAssemblyInstr{
 				&languages.VarAssemblyInstr{
@@ -110,7 +127,7 @@ func SelectInstructionsExpr(expr *languages.SimpleExpr, target *languages.VarAss
 				},
 			}, nil
 		default:
-			return nil, errors.New("Unrecognized primitive type")
+			return nil, errors.New("Unrecognized primitive type in SelectInstructionsExpr")
 		}
 	case expr.App != nil:
 		switch {

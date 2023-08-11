@@ -58,7 +58,7 @@ func RemoveComplexOperandsFromStatement(statement *languages.IfStmtStatement, ge
 		newStatements = append(newStatements, &languages.SimpleStatement{Return: newExpr})
 		return newStatements, nil, nil
 	default:
-		return nil, nil, errors.New("Unrecognized statement")
+		return nil, nil, errors.New("Unrecognized statement in RemoveComplexOperandsFromStatement")
 	}
 }
 
@@ -74,6 +74,8 @@ func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, makeAtomic bool, 
     switch {
     case expr.Num != nil:
         return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Num: expr.Num}}, []*languages.SimpleAssignment{}, nil
+    case expr.Bool != nil:
+        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Bool: expr.Bool}}, []*languages.SimpleAssignment{}, nil
     case expr.Var != nil:
         return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Var: expr.Var}}, []*languages.SimpleAssignment{}, nil
     case expr.App != nil:
@@ -113,7 +115,7 @@ func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, makeAtomic bool, 
 		return newApp, newAssignments, nil
 		}
     default:
-        return nil, nil, errors.New("Unrecognized expression type")
+        return nil, nil, errors.New("Unrecognized expression type in RemoveComplexOperandsFromExpr")
     }
 }
 
