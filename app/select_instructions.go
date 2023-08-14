@@ -64,7 +64,7 @@ func SelectInstructionsStmt(stmt *languages.SimpleStatement, getVar func() *lang
         }
 		return append(instrs, finalInstrs...), nil
 	default:
-		return nil, errors.New("Unrecognized SimpleStatement")
+		return nil, errors.New("Unrecognized SimpleStatement in SelectInstructionsStmt")
 	}
 }
 
