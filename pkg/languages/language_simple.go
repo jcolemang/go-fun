@@ -14,7 +14,7 @@ type SimpleProgram struct {
 type SimpleStatement struct {
 	Expr *SimpleExpr
     IfStmt *SimpleIfStmt
-	Assignment *SimpleAssignment
+	Assignment *Assignment[SimpleExpr]
     Return *SimpleExpr
 }
 
@@ -38,11 +38,6 @@ type SimplePrimitive struct {
 type SimpleApplication struct {
 	Operator *Var
 	Operands []*SimplePrimitive
-}
-
-type SimpleAssignment struct {
-	Ref *Var
-	Expr *SimpleExpr
 }
 
 func SimpleProgramToString(prog *SimpleProgram) string {

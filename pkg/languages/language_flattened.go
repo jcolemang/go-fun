@@ -12,7 +12,7 @@ type FlatProgram struct {
 type FlatStatement struct {
 	Expr *FlatExpr
 	Assignment *FlatAssignment
-    Return *FlatExpr
+    Return *FlatExpr // there can be only one
 }
 
 type FlatExpr struct {
@@ -26,7 +26,9 @@ type FlatExpr struct {
 type FlatIfExpr struct {
     IfCond *FlatExpr
     IfTrue []*FlatStatement
+    IfTrueExpr *FlatExpr
     IfFalse []*FlatStatement
+    IfFalseExpr *FlatExpr
 }
 
 type FlatAssignment struct {

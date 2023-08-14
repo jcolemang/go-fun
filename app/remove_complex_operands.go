@@ -6,8 +6,19 @@ import (
 )
 
 func RemoveComplexOperands(prog *languages.IfStmtProgram, getVar func() *languages.Var) (*languages.SimpleProgram, error) {
+    newStatements, err := RemoveComplexOperandsFromStatementList(prog.Statements, getVar)
+    if err != nil {
+        return nil, err
+    }
+
+	return &languages.SimpleProgram{
+        Statements: newStatements,
+    }, nil
+}
+
+func RemoveComplexOperandsFromStatementList(stmts []*languages.IfStmtStatement, getVar func() *languages.Var) ([]*languages.SimpleStatement, error) {
     var newStatements []*languages.SimpleStatement
-	for _, s := range(prog.Statements) {
+	for _, s := range(stmts) {
 		statements, newAssigns, err := RemoveComplexOperandsFromStatement(s, getVar)
 		if err != nil {
 			return nil, err
@@ -18,16 +29,15 @@ func RemoveComplexOperands(prog *languages.IfStmtProgram, getVar func() *languag
 		newStatements = append(newStatements, statements...)
 	}
 
-	return &languages.SimpleProgram{
-        Statements: newStatements,
-    }, nil
+	return newStatements, nil
 }
 
-func RemoveComplexOperandsFromStatement(statement *languages.IfStmtStatement, getVar func() *languages.Var) ([]*languages.SimpleStatement, []*languages.SimpleAssignment, error) {
+// looking at this now, I don't think the assignments needs to be here. It is always nil.
+func RemoveComplexOperandsFromStatement(statement *languages.IfStmtStatement, getVar func() *languages.Var) ([]*languages.SimpleStatement, []*languages.Assignment[languages.SimpleExpr], error) {
 	var newStatements []*languages.SimpleStatement
 	switch {
 	case statement.Expr != nil:
-		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Expr, false, getVar)
+		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Expr, getVar)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -37,18 +47,28 @@ func RemoveComplexOperandsFromStatement(statement *languages.IfStmtStatement, ge
 		newStatements = append(newStatements, &languages.SimpleStatement{Expr: newExpr})
 		return newStatements, nil, nil
 	case statement.Assignment != nil:
-		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Assignment.Expr, true, getVar)
+		newPrim, newAssigns, err := RemoveComplexOperandsFromExprAtomic(statement.Assignment.Expr, getVar)
 		if err != nil {
 			return nil, nil, err
 		}
 		for _, a := range(newAssigns) {
 			newStatements = append(newStatements, &languages.SimpleStatement{Assignment: a})
 		}
-		newStatements = append(newStatements, &languages.SimpleStatement{Assignment: &languages.SimpleAssignment{Ref: statement.Assignment.Ref, Expr: newExpr}})
+		newStatements = append(
+            newStatements,
+            &languages.SimpleStatement{
+                Assignment: &languages.Assignment[languages.SimpleExpr]{
+                    Ref: statement.Assignment.Ref,
+                    Expr: &languages.SimpleExpr{
+                        Primitive: newPrim,
+                    },
+                },
+            },
+        )
 
 		return newStatements, nil, nil
     case statement.Return != nil:
-		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Return, false, getVar)
+		newExpr, newAssigns, err := RemoveComplexOperandsFromExpr(statement.Return, getVar)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -57,6 +77,38 @@ func RemoveComplexOperandsFromStatement(statement *languages.IfStmtStatement, ge
 		}
 		newStatements = append(newStatements, &languages.SimpleStatement{Return: newExpr})
 		return newStatements, nil, nil
+    case statement.IfStmt != nil:
+		newCondPrim, newCondAssigns, err := RemoveComplexOperandsFromExprAtomic(statement.IfStmt.IfCond, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+
+        newTrueStmts, err := RemoveComplexOperandsFromStatementList(statement.IfStmt.IfTrue, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+
+        newFalseStmts, err := RemoveComplexOperandsFromStatementList(statement.IfStmt.IfFalse, getVar)
+		if err != nil {
+			return nil, nil, err
+		}
+
+        newIfStmt := &languages.SimpleStatement{
+            IfStmt: &languages.SimpleIfStmt{
+                IfCond: newCondPrim,
+                IfTrue: newTrueStmts,
+                IfFalse: newFalseStmts,
+            },
+        }
+
+        var newStatements []*languages.SimpleStatement
+        for _, a := range newCondAssigns {
+            newStatements = append(newStatements, &languages.SimpleStatement{
+                Assignment: a,
+            })
+        }
+
+		return append(newStatements, newIfStmt), newCondAssigns, nil
 	default:
 		return nil, nil, errors.New("Unrecognized statement in RemoveComplexOperandsFromStatement")
 	}
@@ -70,17 +122,17 @@ func RemoveComplexOperandsFromStatement(statement *languages.IfStmtStatement, ge
 // logic works for user defined functions. Does the return value go into a defined register to be used? Would we
 // then have to worry about multiple function calls? Would that even possibly come up if we're the ones generating
 // the instructions? Questions for a later day.
-func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, makeAtomic bool, getVar func() *languages.Var) (*languages.SimpleExpr, []*languages.SimpleAssignment, error) {
+func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.SimpleExpr, []*languages.Assignment[languages.SimpleExpr], error) {
     switch {
     case expr.Num != nil:
-        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Num: expr.Num}}, []*languages.SimpleAssignment{}, nil
+        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Num: expr.Num}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.Bool != nil:
-        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Bool: expr.Bool}}, []*languages.SimpleAssignment{}, nil
+        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Bool: expr.Bool}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.Var != nil:
-        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Var: expr.Var}}, []*languages.SimpleAssignment{}, nil
+        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Var: expr.Var}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.App != nil:
 		var newExprs []*languages.SimplePrimitive
-		var newAssignments []*languages.SimpleAssignment
+		var newAssignments []*languages.Assignment[languages.SimpleExpr]
 		for _, e := range(expr.App) {
 			// arguments to a function must be atomic
 			subExpr, subExprAssignments, err := GenerateAtomicExpression(e, getVar)
@@ -99,21 +151,36 @@ func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, makeAtomic bool, 
 				Operands: rands,
 			},
 		}
-		if makeAtomic {
-			newVar := getVar()
-			newAssignment := &languages.SimpleAssignment{
-				Ref: newVar,
-				Expr: newApp,
-			}
-			newExpr := &languages.SimpleExpr{
-				Primitive: &languages.SimplePrimitive{
-					Var: newVar,
-				},
-			}
-			return newExpr, append(newAssignments, newAssignment), nil
-		} else {
 		return newApp, newAssignments, nil
-		}
+    default:
+        return nil, nil, errors.New("Unrecognized expression type in RemoveComplexOperandsFromExpr")
+    }
+}
+
+func RemoveComplexOperandsFromExprAtomic(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.SimplePrimitive, []*languages.Assignment[languages.SimpleExpr], error) {
+    switch {
+    case expr.Num != nil:
+        return &languages.SimplePrimitive{Num: expr.Num}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+    case expr.Bool != nil:
+        return &languages.SimplePrimitive{Bool: expr.Bool}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+    case expr.Var != nil:
+        return &languages.SimplePrimitive{Var: expr.Var}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+    case expr.App != nil:
+        newApp, newAssignments, err := RemoveComplexOperandsFromExpr(expr, getVar)
+        if err != nil {
+            return nil, nil, err
+        }
+
+        newVar := getVar()
+        newAssignment := &languages.Assignment[languages.SimpleExpr]{
+            Ref: newVar,
+            Expr: newApp,
+        }
+        newPrim := &languages.SimplePrimitive{
+            Var: newVar,
+        }
+
+        return newPrim, append(newAssignments, newAssignment), nil
     default:
         return nil, nil, errors.New("Unrecognized expression type in RemoveComplexOperandsFromExpr")
     }
@@ -189,15 +256,15 @@ func RemoveComplexOperandsFromIf(ifExpr *languages.FlatIfExpr, makeAtomic bool, 
 
 // There is a lot of overlap here with the above function but it felt better doing it this way to help limit the types
 // Will probably see a cleaner way to do this in about 72 hours
-func GenerateAtomicExpression(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.SimplePrimitive, []*languages.SimpleAssignment, error) {
+func GenerateAtomicExpression(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.SimplePrimitive, []*languages.Assignment[languages.SimpleExpr], error) {
 	switch {
 	case expr.Num != nil:
-		return &languages.SimplePrimitive{Num: expr.Num}, []*languages.SimpleAssignment{}, nil
+		return &languages.SimplePrimitive{Num: expr.Num}, []*languages.Assignment[languages.SimpleExpr]{}, nil
 	case expr.Var != nil:
-		return &languages.SimplePrimitive{Var: expr.Var}, []*languages.SimpleAssignment{}, nil
+		return &languages.SimplePrimitive{Var: expr.Var}, []*languages.Assignment[languages.SimpleExpr]{}, nil
 	case expr.App != nil:
 		var primitives []*languages.SimplePrimitive
-		var newAssignments []*languages.SimpleAssignment
+		var newAssignments []*languages.Assignment[languages.SimpleExpr]
 		for _, e := range(expr.App) {
 			primitive, subExprAssigns, err := GenerateAtomicExpression(e, getVar)
 			if err != nil {
@@ -218,7 +285,7 @@ func GenerateAtomicExpression(expr *languages.IfStmtExpr, getVar func() *languag
 			},
 		}
 		newVar := getVar()
-		newAssignment := &languages.SimpleAssignment{
+		newAssignment := &languages.Assignment[languages.SimpleExpr]{
 			Ref: newVar,
 			Expr: newApp,
 		}

@@ -75,7 +75,6 @@ func FlattenExpr(expr *languages.Expr) (*languages.FlatExpr, []*languages.FlatAs
         for _, a := range trueSubAssigns {
             trueStmts = append(trueStmts, &languages.FlatStatement{Assignment: a})
         }
-        trueStmts = append(trueStmts, &languages.FlatStatement{Expr: trueExpr})
 
         falseExpr, falseSubAssigns, err := FlattenExpr(expr.IfExpr.IfFalse)
         if err != nil {
@@ -85,14 +84,15 @@ func FlattenExpr(expr *languages.Expr) (*languages.FlatExpr, []*languages.FlatAs
         for _, a := range falseSubAssigns {
             falseStmts = append(falseStmts, &languages.FlatStatement{Assignment: a})
         }
-        falseStmts = append(falseStmts, &languages.FlatStatement{Expr: falseExpr})
 
         assignments = append(assignments, condSubAssigns...)
 		return &languages.FlatExpr{
             IfExpr: &languages.FlatIfExpr{
                 IfCond: condExpr,
                 IfTrue: trueStmts,
+                IfTrueExpr: trueExpr,
                 IfFalse: falseStmts,
+                IfFalseExpr: falseExpr,
             },
         }, assignments, nil
 	default:
