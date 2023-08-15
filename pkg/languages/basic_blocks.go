@@ -3,35 +3,63 @@ package languages
 import (
 )
 
-type BlockProgram[T Block] struct {
-    Blocks []*T
+type BlockProgram struct {
+    Blocks []*IBlock
 	Statements []*SimpleStatement
 }
 
-type Block interface {
-    BasicBlock | IfBlock
+type IBlock interface {
+    IsBlock()
 }
+func (b BasicBlock) IsBlock() {}
+func (b IfBlock) IsBlock() {}
 
 type BasicBlock struct {
     Label string
-    Statements []*BlockStatement
-    Jump string
+    Statements []IBlockStatement
+    Terminator IBlockTerminator
+}
+
+type IBlockTerminator interface {
+    IsBlockTerminator()
+}
+
+func (j BlockJump) IsBlockTerminator() {}
+func (r BlockReturn) IsBlockTerminator() {}
+
+type BlockJump struct {
+    Label string
+}
+
+type BlockReturn struct {
+    Val BlockExpr
 }
 
 type IfBlock struct {
-    IfCond *Primitive
+    IfCond Primitive
     IfTrue string
     IfFalse string
 }
 
-type BlockStatement struct {
-	Expr *BlockExpr
-	Assignment *Assignment[BlockExpr]
-    Return *BlockExpr
-    Goto *string
+type IBlockStatement interface {
+    IsBlockStatement()
 }
 
-type BlockExpr struct {
-	Primitive *Primitive
-    App *PrimitiveApplication
+func (e Assignment[BlockExpr]) IsBlockStatement() {}
+func (e BlockExpr) IsBlockStatement() {}
+func (e Goto) IsBlockStatement() {}
+
+type Goto struct {
+    Label string
 }
+
+type IBlockExpr interface {
+    IsBlockExpr()
+}
+func (p Primitive) IsBlockExpr() {}
+func (p PrimitiveApplication) IsBlockExpr() {}
+
+type BlockExpr struct {
+    Expr IBlockExpr
+}
+

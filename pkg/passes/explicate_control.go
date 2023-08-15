@@ -1,6 +1,7 @@
 package passes
 
 import (
+    "fmt"
     "errors"
     "language/pkg/languages"
 )
@@ -12,13 +13,58 @@ func FormBlocks(prog *languages.SimpleProgram) (*languages.BlockProgram, error) 
     return nil, errors.New("Still working on it!")
 }
 
-func FormBlocksStmts(stmts []*languages.SimpleStatement, getLabel func() string) (error) {
+func FormNextBlock(stmts []*languages.SimpleStatement, getLabel func() string) (languages.IBlock, error) {
     startLabel, endLabel := getLabel(), getLabel()
-    var blockStmts []*BlockStatement
-    for _, s := range stmts {
+    var blockStmts []languages.IBlockStatement
+    var terminator languages.IBlockTerminator
+    blockIdx := 0
 
+    if len(stmts) == 0 {
+        return make([]languages.IBlock, 0), nil
     }
-    return errors.New("Still working on it")
+
+    for i, s := range stmts {
+        blockIdx = i
+        switch {
+        case s.Expr != nil:
+            bExpr, err := SimpleExprToBlockExpr(s.Expr)
+            if err != nil {
+                return nil, err
+            }
+            blockStmts = append(blockStmts, bExpr)
+        case s.Assignment != nil:
+            bExpr, err := SimpleExprToBlockExpr(s.Assignment.Expr)
+            if err != nil {
+                return nil, err
+            }
+            blockStmts = append(blockStmts, &languages.Assignment[languages.BlockExpr]{
+                Ref: s.Assignment.Ref,
+                Expr: bExpr,
+            })
+        case s.Return != nil:
+            bExpr, err := SimpleExprToBlockExpr(s.Return)
+            if err != nil {
+                return nil, err
+            }
+            terminator = &languages.BlockReturn{
+                Val: *bExpr,
+            }
+        }
+    }
+
+    // newBlock := &languages.
+    return nil, errors.New("Still working on it")
+}
+
+func SimpleExprToBlockExpr(e *languages.SimpleExpr) (*languages.BlockExpr, error) {
+    switch {
+    case e.Primitive != nil:
+        return &languages.BlockExpr{Expr: e.Primitive}, nil
+    case e.App != nil:
+        return &languages.BlockExpr{Expr: e.App}, nil
+    default:
+        return nil, errors.New("Could not convert SimpleExpr to BlockExpr")
+    }
 }
 
 func ExplicateControl() error {

@@ -19,25 +19,19 @@ type SimpleStatement struct {
 }
 
 type SimpleExpr struct {
-	Primitive *SimplePrimitive
-    App *SimpleApplication
+	Primitive *Primitive
+    App *PrimitiveApplication
 }
 
 type SimpleIfStmt struct {
-    IfCond *SimplePrimitive
+    IfCond *Primitive
     IfTrue []*SimpleStatement // cannot pull out statements for evaluation in each branch
     IfFalse []*SimpleStatement
 }
 
-type SimplePrimitive struct {
-	Num *Num
-	Var *Var
-    Bool *Bool
-}
-
 type SimpleApplication struct {
 	Operator *Var
-	Operands []*SimplePrimitive
+	Operands []*Primitive
 }
 
 func SimpleProgramToString(prog *SimpleProgram) string {
@@ -61,7 +55,7 @@ func SimpleStatementToString(statement *SimpleStatement) string {
 	}
 }
 
-func SimplePrimitiveToString(prim *SimplePrimitive) string {
+func SimplePrimitiveToString(prim *Primitive) string {
 	if prim.Num != nil {
 		return fmt.Sprint(*prim.Num.Int)
 	} else if prim.Bool != nil {
