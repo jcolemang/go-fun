@@ -43,6 +43,17 @@ type Assignment [T any] struct {
 	Expr *T `@@ ")"`
 }
 
+type Primitive struct {
+	Num *Num
+	Var *Var
+    Bool *Bool
+}
+
+type PrimitiveApplication struct {
+	Operator *Var
+	Operands []*Primitive
+}
+
 // have this separated to also handle floats
 type Num struct {
 	Int *int `@Int`
