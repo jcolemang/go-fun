@@ -4,15 +4,14 @@ import (
 )
 
 type BlockProgram struct {
-    Blocks []*IBlock
-	Statements []*SimpleStatement
+    Blocks []IBlock
 }
 
 type IBlock interface {
-    IsBlock()
+    BlockLabel() string
 }
-func (b BasicBlock) IsBlock() {}
-func (b IfBlock) IsBlock() {}
+func (b BasicBlock) BlockLabel() string {return b.Label}
+func (b IfBlock) BlockLabel() string {return b.Label}
 
 type BasicBlock struct {
     Label string
@@ -36,6 +35,7 @@ type BlockReturn struct {
 }
 
 type IfBlock struct {
+    Label string
     IfCond Primitive
     IfTrue string
     IfFalse string

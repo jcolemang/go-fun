@@ -81,8 +81,13 @@ func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error)
         fmt.Println(languages.SimpleProgramToString(simpleProg))
     }
 
+    blockProg, err := passes.FormBlocks(simpleProg)
+    if err != nil {
+        return nil, err
+    }
+
 	// Picks Arm instructions but keeps variables around
-	varAssemblyProg, err := SelectInstructions(simpleProg, getVar)
+	varAssemblyProg, err := SelectInstructions(blockProg, getVar)
 	if err != nil {
 		return nil, err
 	}

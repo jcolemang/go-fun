@@ -125,13 +125,13 @@ func RemoveComplexOperandsFromStatement(statement *languages.IfStmtStatement, ge
 func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.SimpleExpr, []*languages.Assignment[languages.SimpleExpr], error) {
     switch {
     case expr.Num != nil:
-        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Num: expr.Num}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+        return &languages.SimpleExpr{Primitive: &languages.Primitive{Num: expr.Num}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.Bool != nil:
-        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Bool: expr.Bool}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+        return &languages.SimpleExpr{Primitive: &languages.Primitive{Bool: expr.Bool}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.Var != nil:
-        return &languages.SimpleExpr{Primitive: &languages.SimplePrimitive{Var: expr.Var}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+        return &languages.SimpleExpr{Primitive: &languages.Primitive{Var: expr.Var}}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.App != nil:
-		var newExprs []*languages.SimplePrimitive
+		var newExprs []*languages.Primitive
 		var newAssignments []*languages.Assignment[languages.SimpleExpr]
 		for _, e := range(expr.App) {
 			// arguments to a function must be atomic
@@ -146,7 +146,7 @@ func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, getVar func() *la
 		rator, rands := newExprs[0], newExprs[1:]
 
 		newApp := &languages.SimpleExpr{
-			App: &languages.SimpleApplication{
+			App: &languages.PrimitiveApplication{
 				Operator: rator.Var,
 				Operands: rands,
 			},
@@ -157,14 +157,14 @@ func RemoveComplexOperandsFromExpr(expr *languages.IfStmtExpr, getVar func() *la
     }
 }
 
-func RemoveComplexOperandsFromExprAtomic(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.SimplePrimitive, []*languages.Assignment[languages.SimpleExpr], error) {
+func RemoveComplexOperandsFromExprAtomic(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.Primitive, []*languages.Assignment[languages.SimpleExpr], error) {
     switch {
     case expr.Num != nil:
-        return &languages.SimplePrimitive{Num: expr.Num}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+        return &languages.Primitive{Num: expr.Num}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.Bool != nil:
-        return &languages.SimplePrimitive{Bool: expr.Bool}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+        return &languages.Primitive{Bool: expr.Bool}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.Var != nil:
-        return &languages.SimplePrimitive{Var: expr.Var}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+        return &languages.Primitive{Var: expr.Var}, []*languages.Assignment[languages.SimpleExpr]{}, nil
     case expr.App != nil:
         newApp, newAssignments, err := RemoveComplexOperandsFromExpr(expr, getVar)
         if err != nil {
@@ -176,7 +176,7 @@ func RemoveComplexOperandsFromExprAtomic(expr *languages.IfStmtExpr, getVar func
             Ref: newVar,
             Expr: newApp,
         }
-        newPrim := &languages.SimplePrimitive{
+        newPrim := &languages.Primitive{
             Var: newVar,
         }
 
@@ -256,14 +256,14 @@ func RemoveComplexOperandsFromIf(ifExpr *languages.FlatIfExpr, makeAtomic bool, 
 
 // There is a lot of overlap here with the above function but it felt better doing it this way to help limit the types
 // Will probably see a cleaner way to do this in about 72 hours
-func GenerateAtomicExpression(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.SimplePrimitive, []*languages.Assignment[languages.SimpleExpr], error) {
+func GenerateAtomicExpression(expr *languages.IfStmtExpr, getVar func() *languages.Var) (*languages.Primitive, []*languages.Assignment[languages.SimpleExpr], error) {
 	switch {
 	case expr.Num != nil:
-		return &languages.SimplePrimitive{Num: expr.Num}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+		return &languages.Primitive{Num: expr.Num}, []*languages.Assignment[languages.SimpleExpr]{}, nil
 	case expr.Var != nil:
-		return &languages.SimplePrimitive{Var: expr.Var}, []*languages.Assignment[languages.SimpleExpr]{}, nil
+		return &languages.Primitive{Var: expr.Var}, []*languages.Assignment[languages.SimpleExpr]{}, nil
 	case expr.App != nil:
-		var primitives []*languages.SimplePrimitive
+		var primitives []*languages.Primitive
 		var newAssignments []*languages.Assignment[languages.SimpleExpr]
 		for _, e := range(expr.App) {
 			primitive, subExprAssigns, err := GenerateAtomicExpression(e, getVar)
@@ -279,7 +279,7 @@ func GenerateAtomicExpression(expr *languages.IfStmtExpr, getVar func() *languag
 			return nil, nil, errors.New("Attempt to apply something non-apply-able")
 		}
 		newApp := &languages.SimpleExpr{
-			App: &languages.SimpleApplication{
+			App: &languages.PrimitiveApplication{
 				Operator: rator.Var,
 				Operands: rands,
 			},
@@ -290,7 +290,7 @@ func GenerateAtomicExpression(expr *languages.IfStmtExpr, getVar func() *languag
 			Expr: newApp,
 		}
 
-		return &languages.SimplePrimitive{Var: newVar}, append(newAssignments, newAssignment), nil
+		return &languages.Primitive{Var: newVar}, append(newAssignments, newAssignment), nil
 
 	default:
 		return nil, nil, errors.New("Unrecognized FlatExpr type")

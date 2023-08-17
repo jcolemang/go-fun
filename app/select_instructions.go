@@ -5,40 +5,57 @@ import (
     "language/pkg/languages"
 )
 
-func SelectInstructions(prog *languages.SimpleProgram, getVar func() *languages.Var) (*languages.VarAssemblyProgram, error) {
+func SelectInstructions(prog *languages.BlockProgram, getVar func() *languages.Var) (*languages.VarAssemblyProgram, error) {
 	var instrs []*languages.VarAssemblyInstr
-	for _, s := range(prog.Statements) {
-		stmtInstrs, err := SelectInstructionsStmt(s, getVar)
-		if err != nil {
-			return nil, err
-		}
-		instrs = append(instrs, stmtInstrs...)
+	for _, b := range(prog.Blocks) {
+        blockInstrs, err := SelectInstructionsBlock(b, getVar)
+        if err != nil {
+            return nil, err
+        }
+        instrs = append(instrs, blockInstrs...)
 	}
 	return &languages.VarAssemblyProgram{Instrs: instrs}, nil
 }
 
-func SelectInstructionsStmt(stmt *languages.SimpleStatement, getVar func() *languages.Var) ([]*languages.VarAssemblyInstr, error) {
-	switch {
-	case stmt.Expr != nil:
+func SelectInstructionsBlock(block languages.IBlock, getVar func() *languages.Var) ([]*languages.VarAssemblyInstr, error) {
+    switch b := block.(type) {
+    case languages.BasicBlock:
+        var instrs []*languages.VarAssemblyInstr
+        for _, s := range(b.Statements) {
+            stmtInstrs, err := SelectInstructionsStmt(s, getVar)
+            if err != nil {
+                return nil, err
+            }
+            instrs = append(instrs, stmtInstrs...)
+        }
+        return instrs, nil
+    }
+    return nil, errors.New("Unrecognized block type in SelectInstructionsBlock")
+}
+
+func SelectInstructionsStmt(blockStmt languages.IBlockStatement, getVar func() *languages.Var) ([]*languages.VarAssemblyInstr, error) {
+    switch stmt := blockStmt.(type) {
+	case languages.BlockExpr:
 		// truly nothing to do with just the naked immediate here
 		instrs, err := SelectInstructionsExpr(stmt.Expr, nil)
 		if err != nil {
 			return nil, err
 		}
 		return instrs, nil
-	case stmt.Assignment != nil:
-		if stmt.Assignment.Ref.Generated == 0 {
+	case languages.Assignment[languages.IBlockExpr]:
+		if stmt.Ref.Generated == 0 {
 			return nil, errors.New("I've made a mistake in variable generation")
 		}
 		targetVar := &languages.VarAssemblyVar{
-			Generated: stmt.Assignment.Ref.Generated,
+			Generated: stmt.Ref.Generated,
 		}
-		instrs, err := SelectInstructionsExpr(stmt.Assignment.Expr, targetVar)
+		instrs, err := SelectInstructionsExpr(*stmt.Expr, targetVar)
 		if err != nil {
 			return nil, err
 		}
 
 		return instrs, nil
+        /*
 	case stmt.Return != nil:
 		targetVar := &languages.VarAssemblyVar{
 			Generated: getVar().Generated,
@@ -63,15 +80,16 @@ func SelectInstructionsStmt(stmt *languages.SimpleStatement, getVar func() *lang
             },
         }
 		return append(instrs, finalInstrs...), nil
+        */
 	default:
-		return nil, errors.New("Unrecognized SimpleStatement in SelectInstructionsStmt")
+		return nil, errors.New("Unrecognized BlockStatement in SelectInstructionsStmt")
 	}
 }
 
 // without passing the variable through I think this would need to be able to generate a new
 // variable to hold the value of the expression but that would I think just add a lot of extra
 // unnecessary variables
-func SelectInstructionsExpr(expr *languages.SimpleExpr, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
+func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
 	switch {
 	case expr.Primitive != nil:
         if target == nil {
@@ -149,7 +167,7 @@ func SelectInstructionsExpr(expr *languages.SimpleExpr, target *languages.VarAss
 	}
 }
 
-func PrimitiveToImmediate(primitive *languages.SimplePrimitive) (*languages.VarAssemblyImmediate, error) {
+func PrimitiveToImmediate(primitive *languages.Primitive) (*languages.VarAssemblyImmediate, error) {
 	switch {
 	case primitive.Num != nil && primitive.Num.Int != nil:
 		return &languages.VarAssemblyImmediate{Int: primitive.Num.Int}, nil
@@ -160,7 +178,7 @@ func PrimitiveToImmediate(primitive *languages.SimplePrimitive) (*languages.VarA
 	}
 }
 
-func HandlePrimitive(primitive string, operands []*languages.SimplePrimitive, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
+func HandlePrimitive(primitive string, operands []*languages.Primitive, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
 	switch primitive {
 	case "+":
 		if len(operands) != 2 {

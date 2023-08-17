@@ -5,6 +5,7 @@ import (
 )
 
 type VarAssemblyProgram struct {
+    MainLabel string
 	Instrs []*VarAssemblyInstr
 }
 
