@@ -30,13 +30,18 @@ func PatchInstructions(prog *languages.ArmProgram) *languages.ArmProgram {
 func PatchInstruction(instr *languages.ArmInstr) []*languages.ArmInstr {
 	switch {
 	// can just remove useless Movs
-	// til how to use multiline statements!
 	case instr.Mov != nil &&
 			instr.Mov[0].ArmOffset != nil &&
 			instr.Mov[1].ArmOffset != nil &&
 			*instr.Mov[0].ArmOffset == *instr.Mov[1].ArmOffset &&
 			instr.Mov[0].ArmOffsetReg.Name == instr.Mov[1].ArmOffsetReg.Name:
 		return []*languages.ArmInstr{}
+	case instr.Mov != nil &&
+			instr.Mov[0].ArmReg != nil &&
+			instr.Mov[1].ArmReg != nil &&
+            *instr.Mov[0].ArmReg == *instr.Mov[1].ArmReg:
+		return []*languages.ArmInstr{}
+    // add doesn't like an int in the first argument
 	case instr.Add != nil && !languages.IsRegister(*instr.Add[1]) && !languages.IsRegister(*instr.Add[2]):
 		return []*languages.ArmInstr{
 			&languages.ArmInstr{

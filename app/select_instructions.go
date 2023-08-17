@@ -1,8 +1,10 @@
 package main
 
 import (
+    "fmt"
 	"errors"
     "language/pkg/languages"
+    "github.com/alecthomas/repr"
 )
 
 func SelectInstructions(prog *languages.BlockProgram, getVar func() *languages.Var) (*languages.VarAssemblyProgram, error) {
@@ -28,35 +30,36 @@ func SelectInstructionsBlock(block languages.IBlock, getVar func() *languages.Va
             }
             instrs = append(instrs, stmtInstrs...)
         }
+        //instrs = append([]*languages.VarAssemblyInstr{&languages.VarAssemblyInstr{}}
         return instrs, nil
     }
     return nil, errors.New("Unrecognized block type in SelectInstructionsBlock")
 }
 
 func SelectInstructionsStmt(blockStmt languages.IBlockStatement, getVar func() *languages.Var) ([]*languages.VarAssemblyInstr, error) {
+    fmt.Println("processing stmt")
+    repr.Println(blockStmt)
     switch stmt := blockStmt.(type) {
 	case languages.BlockExpr:
-		// truly nothing to do with just the naked immediate here
 		instrs, err := SelectInstructionsExpr(stmt.Expr, nil)
 		if err != nil {
 			return nil, err
 		}
 		return instrs, nil
-	case languages.Assignment[languages.IBlockExpr]:
+	case languages.Assignment[languages.BlockExpr]:
 		if stmt.Ref.Generated == 0 {
 			return nil, errors.New("I've made a mistake in variable generation")
 		}
 		targetVar := &languages.VarAssemblyVar{
 			Generated: stmt.Ref.Generated,
 		}
-		instrs, err := SelectInstructionsExpr(*stmt.Expr, targetVar)
+		instrs, err := SelectInstructionsExpr(stmt.Expr.Expr, targetVar)
 		if err != nil {
 			return nil, err
 		}
 
 		return instrs, nil
-        /*
-	case stmt.Return != nil:
+	case languages.BlockReturn:
 		targetVar := &languages.VarAssemblyVar{
 			Generated: getVar().Generated,
 		}
@@ -80,8 +83,8 @@ func SelectInstructionsStmt(blockStmt languages.IBlockStatement, getVar func() *
             },
         }
 		return append(instrs, finalInstrs...), nil
-        */
 	default:
+        repr.Println(blockStmt)
 		return nil, errors.New("Unrecognized BlockStatement in SelectInstructionsStmt")
 	}
 }
@@ -90,17 +93,19 @@ func SelectInstructionsStmt(blockStmt languages.IBlockStatement, getVar func() *
 // variable to hold the value of the expression but that would I think just add a lot of extra
 // unnecessary variables
 func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
-	switch {
-	case expr.Primitive != nil:
+    fmt.Println("processing expr")
+    repr.Println(expr)
+    switch b := expr.(type) {
+	case languages.Primitive:
         if target == nil {
 	        return []*languages.VarAssemblyInstr{}, nil
         }
 		switch {
-		case expr.Primitive.Num != nil:
+		case b.Num != nil:
             var val *languages.VarAssemblyImmediate
-            if expr.Primitive.Num.Int != nil {
+            if b.Num.Int != nil {
                 val = &languages.VarAssemblyImmediate{
-                    Int: expr.Primitive.Num.Int,
+                    Int: b.Num.Int,
                 }
             } else {
                 return nil, errors.New("Unrecognized number type")
@@ -113,9 +118,9 @@ func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAsse
                     },
                 },
             }, nil
-		case expr.Primitive.Bool != nil:
+		case b.Bool != nil:
             var boolVal int
-            if expr.Primitive.Bool.True != nil {
+            if b.Bool.True != nil {
                 boolVal = 1
             } else {
                 boolVal = 0
@@ -131,13 +136,13 @@ func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAsse
                     },
                 },
             }, nil
-		case expr.Primitive.Var != nil:
+		case b.Var != nil:
 			return []*languages.VarAssemblyInstr{
 				&languages.VarAssemblyInstr{
 					Mov: &[2]*languages.VarAssemblyImmediate{
 						&languages.VarAssemblyImmediate{
 							Var: &languages.VarAssemblyVar{
-								Generated: expr.Primitive.Var.Generated,
+								Generated: b.Var.Generated,
 							},
 						},
 						&languages.VarAssemblyImmediate{Var: target},
@@ -147,14 +152,14 @@ func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAsse
 		default:
 			return nil, errors.New("Unrecognized primitive type in SelectInstructionsExpr")
 		}
-	case expr.App != nil:
+	case languages.PrimitiveApplication:
 		switch {
-		case expr.App.Operator.Name != "":
+		case b.Operator.Name != "":
 			return nil, errors.New("An error was made and an unprocessed variable made it through")
-		case expr.App.Operator.Generated != 0:
+		case b.Operator.Generated != 0:
 			return nil, errors.New("User defined functions will go here")
-		case expr.App.Operator.Primitive != "":
-			instrs, err := HandlePrimitive(expr.App.Operator.Primitive, expr.App.Operands, target)
+		case b.Operator.Primitive != "":
+			instrs, err := HandlePrimitive(b.Operator.Primitive, b.Operands, target)
 			if err != nil {
 				return nil, err
 			}
@@ -163,6 +168,7 @@ func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAsse
 			return nil, errors.New("Unrecognized variable type")
 		}
 	default:
+        repr.Println(b)
 		return nil, errors.New("Unrecognized SimpleExpr type")
 	}
 }

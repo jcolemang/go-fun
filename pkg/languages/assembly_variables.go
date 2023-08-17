@@ -10,9 +10,10 @@ type VarAssemblyProgram struct {
 }
 
 type VarAssemblyInstr struct {
+    Label *string
 	Add *[3]*VarAssemblyImmediate
 	Mov *[2]*VarAssemblyImmediate
-    Ret *Ret // does not matter
+    Ret *Ret
 }
 
 type VarAssemblyImmediate struct {

@@ -45,7 +45,7 @@ func HelpFormBlocks(stmts []*languages.SimpleStatement, currentBlockStmts []lang
         if err != nil {
             return nil, nil, err
         }
-        assignment := &languages.Assignment[languages.BlockExpr]{
+        assignment := languages.Assignment[languages.BlockExpr]{
             Ref: stmt.Assignment.Ref,
             Expr: bExpr,
         }

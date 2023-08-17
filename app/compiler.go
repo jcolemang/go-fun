@@ -86,6 +86,11 @@ func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error)
         return nil, err
     }
 
+    if debug {
+        fmt.Println("Program after FormBlocks")
+        repr.Println(blockProg)
+    }
+
 	// Picks Arm instructions but keeps variables around
 	varAssemblyProg, err := SelectInstructions(blockProg, getVar)
 	if err != nil {

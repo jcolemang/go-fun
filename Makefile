@@ -1,5 +1,5 @@
 
-PROG ?= ./test-files/4.lang
+PROG ?= ./test-files/6.lang
 
 program: c/runtime.o assembly.o
 	ld -o program assembly.o c/runtime.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64
