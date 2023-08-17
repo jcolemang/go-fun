@@ -2,3 +2,5 @@
 test-files/*.s
 test-files/*.o
 test-files/*.prog
+assembly.s
+program
