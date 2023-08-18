@@ -1,6 +1,8 @@
 package graph
 
 import (
+    "fmt"
+    "github.com/alecthomas/repr"
 )
 
 // mutation is for suckers
@@ -8,6 +10,20 @@ import (
 type Graph[T comparable] struct {
 	Nodes map[T]int // int here represents color
 	Edges map[T]map[T]bool
+}
+
+func GraphToString[T comparable](g Graph[T]) string {
+    nodes := "Nodes: "
+    for key, _ := range g.Nodes {
+        nodes += repr.String(key) + ", "
+    }
+    edges := "Edges: "
+    for key1, m := range g.Edges {
+        for key2, _ := range m {
+            edges += repr.String(key1) + ", " + repr.String(key2) + "\n"
+        }
+    }
+    return nodes + "\n" + edges
 }
 
 func NewGraph[T comparable]() *Graph[T] {
@@ -103,9 +119,9 @@ func ColorGraphHelper[T comparable](graph *Graph[T], saturation map[T][]int, col
 // second return value is in case a new color had to be added
 // as stated above, this is not an optimal solution
 func GetMinimalColor(adjacentColors []int, availableColors []int) (int, []int) {
-	for available := range availableColors {
+	for _, available := range availableColors {
 		colorAvailable := true
-		for adjacent := range adjacentColors {
+		for _, adjacent := range adjacentColors {
 			if available == adjacent {
 				colorAvailable = false
 				break

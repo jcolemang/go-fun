@@ -103,7 +103,7 @@ func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error)
     }
 
 	// Assigns variables to registers
-	assembly, err := AssignRegisters(varAssemblyProg, false)
+	assembly, err := AssignRegisters(varAssemblyProg, debug)
 	if err != nil {
 		return nil, err
 	}

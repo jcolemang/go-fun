@@ -18,7 +18,7 @@ func AssignRegisters(prog *languages.VarAssemblyProgram, debug bool) (*languages
 	colorings := graph.ColorGraph(interferenceGraph)
 
     if debug {
-        repr.Println(interferenceGraph)
+        fmt.Println(graph.GraphToString(*interferenceGraph))
         repr.Println(colorings)
         fmt.Println(LiveAfterSetsToString(liveAfterSets))
     }
@@ -87,23 +87,28 @@ func AssignRegisters(prog *languages.VarAssemblyProgram, debug bool) (*languages
 // (this second if is the same in the other instructions)
 func BuildInterferenceGraph(liveAfterSets []*LiveAfterInstr) *graph.Graph[Location] {
 	newGraph := graph.NewGraph[Location]()
-	for _, liveAfterSet := range(liveAfterSets) {
+	for _, liveAfterSet := range liveAfterSets {
 		read, written := LocationsReadWritten(liveAfterSet.Instr)
-
 		switch {
 		case liveAfterSet.Instr.Mov != nil:
-			// this is a weird block but there is guaranteed to be only one read and written location
-			// maybe a better way to pattern match or a better data structure?
-			for readLoc, _ := range(read) {
-				newGraph = graph.AddNode(*newGraph, readLoc)
-				for writtenLoc, _ := range(written) {
-					newGraph = graph.AddNode(*newGraph, writtenLoc)
-					for liveAfterLoc, _ := range(liveAfterSet.LiveAfter) {
-						if liveAfterLoc != writtenLoc && liveAfterLoc != readLoc {
-							newGraph = graph.AddEdge(*newGraph, writtenLoc, liveAfterLoc)
-						}
-					}
-				}
+            for writtenLoc, _ := range(written) {
+                newGraph = graph.AddNode(*newGraph, writtenLoc)
+                if len(read) == 0 {
+                    for liveAfterLoc, _ := range(liveAfterSet.LiveAfter) {
+                        if liveAfterLoc != writtenLoc {
+                            newGraph = graph.AddEdge(*newGraph, writtenLoc, liveAfterLoc)
+                        }
+                    }
+                } else {
+                    for readLoc, _ := range(read) {
+                        newGraph = graph.AddNode(*newGraph, readLoc)
+                        for liveAfterLoc, _ := range(liveAfterSet.LiveAfter) {
+                            if liveAfterLoc != writtenLoc && liveAfterLoc != readLoc {
+                                newGraph = graph.AddEdge(*newGraph, writtenLoc, liveAfterLoc)
+                            }
+                        }
+                    }
+                }
 			}
 		default:
 			for writtenLoc, _ := range(written) {
