@@ -87,8 +87,8 @@ func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error)
     }
 
     if debug {
-        fmt.Println("Program after FormBlocks")
-        repr.Println(blockProg)
+        // fmt.Println("Program after FormBlocks")
+        // repr.Println(blockProg)
     }
 
 	// Picks Arm instructions but keeps variables around
@@ -103,7 +103,7 @@ func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error)
     }
 
 	// Assigns variables to registers
-	assembly, err := AssignRegisters(varAssemblyProg, debug)
+	assembly, err := AssignRegisters(varAssemblyProg, false)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func Compile(prog *languages.Program, debug bool) (*languages.ArmProgram, error)
 
     if debug {
         fmt.Println("Program after PatchInstructions")
-        fmt.Println(languages.ArmProgramToString(assembly))
+        fmt.Println(languages.ArmProgramToString(patchedAssembly))
     }
 
 	return patchedAssembly, nil

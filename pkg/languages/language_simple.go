@@ -45,11 +45,11 @@ func SimpleProgramToString(prog *SimpleProgram) string {
 func SimpleStatementToString(statement *SimpleStatement) string {
 	switch {
 	case statement.Expr != nil:
-		return SimpleExprToString(statement.Expr)
+		return "\t" + SimpleExprToString(statement.Expr)
 	case statement.Assignment != nil:
-		return VarToString(statement.Assignment.Ref) + " = " + SimpleExprToString(statement.Assignment.Expr)
+		return "\t" + VarToString(statement.Assignment.Ref) + " = " + SimpleExprToString(statement.Assignment.Expr)
 	case statement.Return != nil:
-		return "return " + SimpleExprToString(statement.Return)
+		return "\treturn " + SimpleExprToString(statement.Return)
 	default:
 		return "Got a nonsense statement and I don't want to deal with the error"
 	}

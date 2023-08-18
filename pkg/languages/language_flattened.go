@@ -47,11 +47,11 @@ func FlatProgramToString(prog *FlatProgram) string {
 func FlatStatementToString(statement *FlatStatement) string {
 	switch {
 	case statement.Expr != nil:
-		return FlatExprToString(statement.Expr)
+		return "\t" + FlatExprToString(statement.Expr)
 	case statement.Assignment != nil:
-		return VarToString(statement.Assignment.Ref) + " = " + FlatExprToString(statement.Assignment.Expr)
+		return "\t" + VarToString(statement.Assignment.Ref) + " = " + FlatExprToString(statement.Assignment.Expr)
 	case statement.Return != nil:
-		return "return " + FlatExprToString(statement.Return)
+		return "\treturn " + FlatExprToString(statement.Return)
 	default:
 		return "Got a nonsense statement and I don't want to deal with the error"
 	}

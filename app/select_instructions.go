@@ -1,10 +1,8 @@
 package main
 
 import (
-    "fmt"
 	"errors"
     "language/pkg/languages"
-    "github.com/alecthomas/repr"
 )
 
 func SelectInstructions(prog *languages.BlockProgram, getVar func() *languages.Var) (*languages.VarAssemblyProgram, error) {
@@ -40,8 +38,6 @@ func SelectInstructionsBlock(block languages.IBlock, getVar func() *languages.Va
 }
 
 func SelectInstructionsStmt(blockStmt languages.IBlockStatement, getVar func() *languages.Var) ([]*languages.VarAssemblyInstr, error) {
-    fmt.Println("processing stmt")
-    repr.Println(blockStmt)
     switch stmt := blockStmt.(type) {
 	case languages.BlockExpr:
 		instrs, err := SelectInstructionsExpr(stmt.Expr, nil)
@@ -63,13 +59,11 @@ func SelectInstructionsStmt(blockStmt languages.IBlockStatement, getVar func() *
 
 		return instrs, nil
 	default:
-        repr.Println(blockStmt)
 		return nil, errors.New("Unrecognized BlockStatement in SelectInstructionsStmt")
 	}
 }
 
 func SelectInstructionsTerminator(blockTerm languages.IBlockTerminator, getVar func() *languages.Var) ([]*languages.VarAssemblyInstr, error) {
-    repr.Println(blockTerm)
     switch b := blockTerm.(type) {
 	case languages.BlockReturn:
 		targetVar := &languages.VarAssemblyVar{
@@ -104,8 +98,6 @@ func SelectInstructionsTerminator(blockTerm languages.IBlockTerminator, getVar f
 // variable to hold the value of the expression but that would I think just add a lot of extra
 // unnecessary variables
 func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAssemblyVar) ([]*languages.VarAssemblyInstr, error) {
-    fmt.Println("processing expr")
-    repr.Println(expr)
     switch b := expr.(type) {
 	case languages.Primitive:
         if target == nil {
@@ -179,7 +171,6 @@ func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAsse
 			return nil, errors.New("Unrecognized variable type")
 		}
 	default:
-        repr.Println(b)
 		return nil, errors.New("Unrecognized SimpleExpr type in SelectInstructionsExpr")
 	}
 }

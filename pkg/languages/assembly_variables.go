@@ -38,12 +38,12 @@ func VarAssemblyInstrToString(instr *VarAssemblyInstr) string {
     switch {
     case instr.Add != nil:
         first, second, third := instr.Add[0], instr.Add[1], instr.Add[2]
-        return "add " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second) + " " + VarAssemblyImmediateToString(third)
+        return "\tadd " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second) + " " + VarAssemblyImmediateToString(third)
     case instr.Mov != nil:
         first, second := instr.Mov[0], instr.Mov[1]
-        return "mov " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second)
+        return "\tmov " + VarAssemblyImmediateToString(first) + " " + VarAssemblyImmediateToString(second)
     case instr.Ret != nil:
-        return "ret"
+        return "\tret"
     default:
         return "Unrecognized thing and I don't wanna deal"
     }
