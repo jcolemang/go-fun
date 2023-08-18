@@ -2,6 +2,7 @@ package languages
 
 import (
 	"fmt"
+	"github.com/alecthomas/repr"
 )
 
 // Main Language
@@ -70,6 +71,6 @@ func FlatExprToString(expr *FlatExpr) string {
 		}
 		return s + " )"
 	default:
-		return "Got a nonsense expression and I don't want to deal with the error"
+        return repr.String(expr)
 	}
 }

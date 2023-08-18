@@ -2,6 +2,7 @@ package languages
 
 import (
 	"fmt"
+	"github.com/alecthomas/repr"
 )
 
 // Simplifies language with significant constraints around
@@ -51,7 +52,7 @@ func SimpleStatementToString(statement *SimpleStatement) string {
 	case statement.Return != nil:
 		return "\treturn " + SimpleExprToString(statement.Return)
 	default:
-		return "Got a nonsense statement and I don't want to deal with the error"
+		return "\t" + repr.String(statement)
 	}
 }
 

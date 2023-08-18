@@ -28,7 +28,7 @@ func FormBlocks(prog *languages.SimpleProgram) (*languages.BlockProgram, error) 
 
 func HelpFormBlocks(stmts []*languages.SimpleStatement, currentBlockStmts []languages.IBlockStatement, getLabel func() string) (languages.IBlock, []languages.IBlock, error) {
     if len(stmts) == 0 {
-        return nil, nil, errors.New("Error forming blocks: found no block terminator")
+        return nil, nil, errors.New("Error forming blocks: found no block terminator in HelpFormBlocks")
     }
 
     stmt, rest := stmts[0], stmts[1:]
