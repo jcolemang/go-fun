@@ -59,7 +59,7 @@ func HelpFormBlocks(stmts []*languages.SimpleStatement, currentBlockStmts []lang
             return nil, nil, errors.New("Found unreachable statements in HelpFormBlocks")
         }
         blockLabel := getLabel()
-        blockTerminator := &languages.BlockReturn{
+        blockTerminator := languages.BlockReturn{
             Val: *bExpr,
         }
         block := languages.BasicBlock{
@@ -101,9 +101,9 @@ func IfStmtToBlocks(stmt *languages.SimpleIfStmt, getLabel func() string) (langu
 func SimpleExprToBlockExpr(e *languages.SimpleExpr) (*languages.BlockExpr, error) {
     switch {
     case e.Primitive != nil:
-        return &languages.BlockExpr{Expr: e.Primitive}, nil
+        return &languages.BlockExpr{Expr: *e.Primitive}, nil
     case e.App != nil:
-        return &languages.BlockExpr{Expr: e.App}, nil
+        return &languages.BlockExpr{Expr: *e.App}, nil
     default:
         return nil, errors.New("Could not convert SimpleExpr to BlockExpr")
     }

@@ -30,8 +30,11 @@ func SelectInstructionsBlock(block languages.IBlock, getVar func() *languages.Va
             }
             instrs = append(instrs, stmtInstrs...)
         }
-        //instrs = append([]*languages.VarAssemblyInstr{&languages.VarAssemblyInstr{}}
-        return instrs, nil
+        terminatorInstrs, err := SelectInstructionsTerminator(b.Terminator, getVar)
+        if err != nil {
+            return nil, err
+        }
+        return append(instrs, terminatorInstrs...), nil
     }
     return nil, errors.New("Unrecognized block type in SelectInstructionsBlock")
 }
@@ -59,11 +62,20 @@ func SelectInstructionsStmt(blockStmt languages.IBlockStatement, getVar func() *
 		}
 
 		return instrs, nil
+	default:
+        repr.Println(blockStmt)
+		return nil, errors.New("Unrecognized BlockStatement in SelectInstructionsStmt")
+	}
+}
+
+func SelectInstructionsTerminator(blockTerm languages.IBlockTerminator, getVar func() *languages.Var) ([]*languages.VarAssemblyInstr, error) {
+    repr.Println(blockTerm)
+    switch b := blockTerm.(type) {
 	case languages.BlockReturn:
 		targetVar := &languages.VarAssemblyVar{
 			Generated: getVar().Generated,
 		}
-		instrs, err := SelectInstructionsExpr(stmt.Return, targetVar)
+		instrs, err := SelectInstructionsExpr(b.Val.Expr, targetVar)
 		if err != nil {
 			return nil, err
 		}
@@ -83,10 +95,9 @@ func SelectInstructionsStmt(blockStmt languages.IBlockStatement, getVar func() *
             },
         }
 		return append(instrs, finalInstrs...), nil
-	default:
-        repr.Println(blockStmt)
-		return nil, errors.New("Unrecognized BlockStatement in SelectInstructionsStmt")
-	}
+    default:
+        return nil, errors.New("Unrecognized block terminator in SelectInstructionsTerminator")
+    }
 }
 
 // without passing the variable through I think this would need to be able to generate a new
@@ -169,7 +180,7 @@ func SelectInstructionsExpr(expr languages.IBlockExpr, target *languages.VarAsse
 		}
 	default:
         repr.Println(b)
-		return nil, errors.New("Unrecognized SimpleExpr type")
+		return nil, errors.New("Unrecognized SimpleExpr type in SelectInstructionsExpr")
 	}
 }
 
